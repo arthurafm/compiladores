@@ -4,10 +4,15 @@
 
 %}
 
+%option yylineno
 %option noyywrap
 
 %%
 
+\n { };
+(:space:|\t)+ { };
+\/\/(.)* { /* In-line comment - DO NOTHING */ }
+\/\*(.|\n)*\*\/ { /* Multi-line comment - DO NOTHING */ }
 int return TK_PR_INT;
 float return TK_PR_FLOAT;
 bool return TK_PR_BOOL;

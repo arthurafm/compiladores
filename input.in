@@ -31,3 +31,14 @@ true
 foo
 123
 1.23
+// Comentario em linha
+/* Comentario em linha */
+/* Comentario
+em varias
+varias
+varias
+varias
+varias
+linhas */
+compiladores
+int foo = 4;
