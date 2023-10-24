@@ -9,8 +9,8 @@
 
 %%
 
+[ \s]+ {}
 \n { };
-(:space:|\t)+ { };
 \/\/(.)* { /* In-line comment - DO NOTHING */ }
 \/\*(.|\n)*\*\/ { /* Multi-line comment - DO NOTHING */ }
 int return TK_PR_INT;
@@ -43,9 +43,9 @@ return return TK_PR_RETURN;
 (\|) return TK_OC_OR;
 false return TK_LIT_FALSE;
 true return TK_LIT_TRUE;
-^([a-z]|_)([a-z]|_|[0-9])* return TK_IDENTIFICADOR;
-^([0-9])*$ return TK_LIT_INT;
-^([0-9])*.([0-9])+ return TK_LIT_FLOAT;
+([a-z]|_)([a-z]|_|[0-9])* return TK_IDENTIFICADOR;
+([0-9])* return TK_LIT_INT;
+([0-9])*.([0-9])+ return TK_LIT_FLOAT;
 . return TK_ERRO;
 
 %%
