@@ -1,44 +1,17 @@
-int
-float
-bool
-if
-else
-while
-return
--
-!
-*
-/
-%
-+
-<
->
-{
+int main() {    
+
+    int number1, number2, sum, tam;
+    
+    number1 = 10;
+    number2 = 2;
+    tam = 1;
+
+    // calculate the sum
+    sum = number1 + number2;      
+    
+    /*
+        Comment
+    */
+
+    return sum;
 }
-(
-)
-=
-,
-;
-<=
->=
-==
-!=
-&
-|
-false
-true
-foo
-123
-1.23
-// Comentario em linha
-/* Comentario em linha */
-/* Comentario
-em varias
-varias
-varias
-varias
-varias
-linhas */
-compiladores
-int foo = 4;
