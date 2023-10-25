@@ -52,4 +52,6 @@ true return TK_LIT_TRUE;
 
 %%
 
-
+int get_line_number() {
+	return yylineno;
+}

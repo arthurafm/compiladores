@@ -1,10 +1,8 @@
-CC=gcc
-CFLAGS=-I.
-DEPS = tokens.h
-OBJ = lex.yy.o get_line_number.o main.o 
+all: etapa1
 
-%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+lex.yy.c: scanner.l
+	flex scanner.l	
 
-etapa1: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS)
+etapa1: lex.yy.c main.c tokens.h
+
+	gcc -o etapa1 main.c lex.yy.c
