@@ -1,11 +1,9 @@
 %{
-	
 	/* GRUPO G */
 	/* Arthur Alves Ferreira Melo - 00333985 */
 	/* Emanuel Pacheco Thiel -  */
-	
-	#include "tokens.h"
 
+	#include "parser.tab.h"
 %}
 
 %option yylineno

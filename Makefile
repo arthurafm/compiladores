@@ -1,7 +1,10 @@
-all: etapa1
+all: etapa2
 
-lex.yy.c: scanner.l
+bison:
+	@(bison -d parser.y)
+
+lex.yy.c: scanner.l bison
 	@(flex scanner.l)	
 
-etapa1: lex.yy.c main.c tokens.h
-	@(gcc -o etapa1 main.c lex.yy.c get_line_number.c)
+etapa2: lex.yy.c main.c parser.tab.c
+	@(gcc -o etapa2 main.c lex.yy.c parser.tab.c utils.c)

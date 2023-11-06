@@ -1,17 +1,6 @@
-int main() {    
+int foo, bar;
 
-    int number1, number2, sum, tam;
-    
-    number1 = 10;
-    number2 = 2;
-    tam = 1;
-
-    // calculate the sum
-    sum = number1 + number2;      
-    
-    /*
-        Comment
-    */
-
-    return sum;
+(int bar, float foo, bool as, int fasd) >= int! foo {
+    int foo;
+    int foo;
 }
