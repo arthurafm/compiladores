@@ -31,62 +31,107 @@
 
 %%
 
-program: list; 
-program: /* Empty symbol */ ;
+/* The Language */
+program: list;
+program: /* Empty symbol */;
 
-list: list element;
+list: element list;
 list: element;
 
+element: var;
 element: function;
-element: global_var;
 
+/* Variables */
+var: type id_list';';
+
+/* Functions */
+function: function_header function_body;
+
+function_header: param_list_parenthesis TK_OC_GE type'!' id;
+
+function_body: '{' simple_command_list '}';
+function_body: '{' '}';
+
+/* Simple Commands */
+simple_command_list: simple_command';';
+simple_command_list: simple_command';' simple_command_list;
+
+simple_command: type id_list;													/* Variable declaration */
+simple_command: id '=' precedence_A;													/* Attribution */
+simple_command: id'('argument_list')';											/* Function call */
+simple_command: TK_PR_RETURN precedence_A;												/* Return command */
+simple_command: TK_PR_IF '(' precedence_A ')' function_body;							/* Flow Control */
+simple_command: TK_PR_IF '(' precedence_A ')' function_body TK_PR_ELSE function_body;	/* Flow Control */
+simple_command: TK_PR_WHILE '(' precedence_A ')' function_body;							/* Flow Control */
+
+/* Expressions */
+expr: id;
+expr: lit;
+expr: id'('argument_list')';
+
+precedence_A: precedence_B;
+precedence_A: precedence_A '|' precedence_B;
+
+precedence_B: precedence_C;
+precedence_B: precedence_B '&' precedence_C;
+
+precedence_C: precedence_D;
+precedence_C: precedence_C '=''=' precedence_D;
+precedence_C: precedence_C '!''=' precedence_D;
+
+precedence_D: precedence_E;
+precedence_D: precedence_D '<' precedence_E;
+precedence_D: precedence_D '>' precedence_E;
+precedence_D: precedence_D '<''=' precedence_E;
+precedence_D: precedence_D '>''=' precedence_E;
+
+precedence_E: precedence_F;
+precedence_E: precedence_E '+' precedence_F;
+precedence_E: precedence_E '-' precedence_F;
+
+precedence_F: precedence_G;
+precedence_F: precedence_F '*' precedence_G;
+precedence_F: precedence_F '/' precedence_G;
+precedence_F: precedence_F '%' precedence_G;
+
+precedence_G: expr;
+precedence_G: '('precedence_A')';
+precedence_G: '-'precedence_G;
+precedence_G: '!'precedence_G;
+
+
+/* -- Aux expressions -- */
+
+
+/* Types */
 type: TK_PR_INT;	/* int */
 type: TK_PR_FLOAT;	/* float */
 type: TK_PR_BOOL;	/* bool */
 
+/* Identifiers */
 id: TK_IDENTIFICADOR;
 
 id_list: id;
-id_list: id_list','id;
+id_list: id',' id_list;
 
-global_var: type id_list';';
-
-param: type id;
-
-param_list: param;
-param_list: param_list',' param;
-
-function_header: '(' param_list ')' TK_OC_GE type'!' id;
-
+/* Literals */
 lit: TK_LIT_INT;
 lit: TK_LIT_FLOAT;
 lit: TK_LIT_TRUE;
 lit: TK_LIT_FALSE;
 
-operand: id;
-operand: lit;
-operand: id'('argument_list')';
+/* Parameters */
+param_list_parenthesis: '(' ')';
+param_list_parenthesis: '(' param_list ')';
 
-expr: operand;
+param_list: param;
+param_list: param ',' param_list;
 
-argument: id;
-argument: expr;
+param: type id;
 
-argument_list: argument;
-argument_list: argument_list',' argument;
-
-simple_command: type id_list;			/* Variable declaration */
-simple_command: id '=' expr;			/* Attribution */
-simple_command: id'('argument_list')';	/* Function call */
-simple_command: TK_PR_RETURN expr;		/* Return command */
-
-simple_command_list: simple_command;
-simple_command_list: simple_command_list';' simple_command';';
-
-function_body: '{' simple_command_list '}'
-function_body: '{''}';
-
-function: function_header function_body;
+/* Arguments */
+argument_list: expr',' argument_list;
+argument_list: expr;
 
 
 %%
