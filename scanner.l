@@ -1,7 +1,7 @@
 %{
 	/* GRUPO G */
 	/* Arthur Alves Ferreira Melo - 00333985 */
-	/* Emanuel Pacheco Thiel -  */
+	/* Emanuel Pacheco Thiel -  00170313 */
 
 	#include "parser.tab.h"
 %}
