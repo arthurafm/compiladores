@@ -70,20 +70,20 @@ expr: lit;
 expr: id'('argument_list')';
 
 precedence_A: precedence_B;
-precedence_A: precedence_A '|' precedence_B;
+precedence_A: precedence_A TK_OC_OR precedence_B;
 
 precedence_B: precedence_C;
-precedence_B: precedence_B '&' precedence_C;
+precedence_B: precedence_B TK_OC_AND precedence_C;
 
 precedence_C: precedence_D;
-precedence_C: precedence_C '=''=' precedence_D;
-precedence_C: precedence_C '!''=' precedence_D;
+precedence_C: precedence_C TK_OC_EQ precedence_D;
+precedence_C: precedence_C TK_OC_NE precedence_D;
 
 precedence_D: precedence_E;
 precedence_D: precedence_D '<' precedence_E;
 precedence_D: precedence_D '>' precedence_E;
-precedence_D: precedence_D '<''=' precedence_E;
-precedence_D: precedence_D '>''=' precedence_E;
+precedence_D: precedence_D TK_OC_LE precedence_E;
+precedence_D: precedence_D TK_OC_GE precedence_E;
 
 precedence_E: precedence_F;
 precedence_E: precedence_E '+' precedence_F;
