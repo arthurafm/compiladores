@@ -15,6 +15,8 @@ typedef struct asd_tree {
 
 int get_line_number();
 
+void set_root(asd_tree_t *t);
+
 void yyerror(const char *s);
 
 /*

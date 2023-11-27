@@ -5,10 +5,8 @@
 	
 	#include <string.h>
 
-	extern void *arvore;
-
 	int yylex(void);
-	void yyerror (char const *mensagem);
+	void yyerror(char const *mensagem);
 %}
 
 %code requires { #include "utils.h" }
@@ -67,9 +65,12 @@
 /* The Language */
 program: list {
 	$$ = $1;
-	arvore = $$;
+	set_root($$);
 };
-program: /* Empty symbol */ {};
+program: /* Empty symbol */ {
+	$$ = NULL;
+	set_root($$);
+};
 
 list: element {
 	$$ = $1;

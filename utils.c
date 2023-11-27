@@ -5,9 +5,14 @@
 #define ARQUIVO_SAIDA "saida.dot"
 
 extern int yylineno;
+extern void *arvore;
 
 int get_line_number() {
 	return yylineno;
+}
+
+void set_root(asd_tree_t *t) {
+  arvore = t;
 }
 
 void yyerror(const char *s) {
