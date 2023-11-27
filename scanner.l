@@ -5,7 +5,6 @@
 
 	#include "parser.tab.h"
 
-	extern void *arvore;
 %}
 
 %option yylineno

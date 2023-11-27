@@ -40,8 +40,15 @@
 %token<valor_lexico> TK_LIT_TRUE
 %token TK_ERRO
 
+%type<tree> program
+%type<tree> list
+%type<tree> element
+%type<tree> function
+%type<tree> function_header
 %type<tree> function_body
+%type<tree> simple_command_list
 %type<tree> simple_command
+%type<tree> expr
 %type<tree> precedence_A
 %type<tree> precedence_B
 %type<tree> precedence_C
@@ -58,31 +65,68 @@
 %%
 
 /* The Language */
-program: list;
-program: /* Empty symbol */;
+program: list {
+	$$ = $1;
+	arvore = $$;
+};
+program: /* Empty symbol */ {};
 
-list: element list;
-list: element;
+list: element {
+	$$ = $1;
+};
+list: element list {
+	$$ = $1;
+	asd_add_child($$, $2);
+};
 
-element: var;
-element: function;
+element: var {
+	$$ = NULL;
+};
+element: function {
+	$$ = $1;
+};
 
 /* Variables */
 var: type id_list';';
 
 /* Functions */
-function: function_header function_body;
+function: function_header function_body {
 
-function_header: param_list_parenthesis TK_OC_GE type'!' id;
+	/* Ideia é ficar foo ---- = ---- ----- corpo */
+	$$ = $1;
 
-function_body: '{' simple_command_list '}';
-function_body: '{' '}';
+	lex_val lexem;
+	lexem.num_line = get_line_number();
+	lexem.token_type = strdup("funcao");
+	lexem.token_value = strdup("=");
+	asd_tree_t *t = asd_new(lexem);
+	asd_add_child($$, t);
+	asd_add_child(t, $2);
+};
+
+function_header: param_list_parenthesis TK_OC_GE type'!' id {
+	$$ = $5;
+};
+
+function_body: '{' simple_command_list '}' {
+	$$ = $2;
+};
+function_body: '{' '}' {
+	$$ = NULL;
+};
 
 /* Simple Commands */
-simple_command_list: simple_command';';
-simple_command_list: simple_command';' simple_command_list;
+simple_command_list: simple_command';' {
+	$$ = $1;
+};
+simple_command_list: simple_command';' simple_command_list {
+	$$ = $1;
+	asd_add_child($$, $3);
+};
 
-simple_command: type id_list; 															/* Variable declaration */
+simple_command: type id_list {
+	$$ = NULL;
+} /* Variable declaration */
 simple_command: id '=' precedence_A {
 	lex_val lexem;
 	lexem.num_line = get_line_number();
@@ -142,9 +186,24 @@ simple_command: TK_PR_WHILE '(' precedence_A ')' function_body {
 }; /* Flow Control */
 
 /* Expressions */
-expr: id;
-expr: lit;
-expr: id'('argument_list')';
+expr: id {
+	$$ = $1;
+};
+expr: lit {
+	$$ = $1;
+};
+expr: id'('argument_list')' {
+	lex_val id_lex = $1->label;
+	char *tkn_value;
+	strcpy(tkn_value, "call ");
+	strcat(tkn_value, id_lex.token_value);
+	lex_val lexem;
+	lexem.num_line = get_line_number();
+	lexem.token_type = strdup("comando simples");
+	lexem.token_value = strdup(tkn_value);
+	$$ = asd_new(lexem);
+	asd_add_child($$, $3);
+};
 
 precedence_A: precedence_B;
 precedence_A: precedence_A TK_OC_OR precedence_B {
@@ -276,7 +335,9 @@ precedence_F: precedence_F '%' precedence_G {
 };
 
 precedence_G: expr;
-precedence_G: '('precedence_A')';
+precedence_G: '('precedence_A')' {
+	$$ = $2;
+};
 precedence_G: '-'precedence_G {
 	lex_val lexem;
 	lexem.num_line = get_line_number();
@@ -335,8 +396,12 @@ param_list: param ',' param_list;
 param: type id;
 
 /* Arguments */
-argument_list: expr',' argument_list;
-argument_list: expr;
-
+argument_list: expr {
+	$$ = $1;
+};
+argument_list: expr',' argument_list {
+	$$ = $1;
+	asd_add_child($$, $3);
+};
 
 %%
