@@ -64,7 +64,7 @@ static void _asd_print (FILE *foutput, asd_tree_t *tree, int profundidade)
 {
   int i;
   if (tree != NULL){
-    fprintf(foutput, "%d%*s: Nó '%s' tem %d filhos:\n", profundidade, profundidade*2, "", tree->label, tree->number_of_children);
+    fprintf(foutput, "%d%*s: Nó '%s' tem %d filhos:\n", profundidade, profundidade*2, "", tree->label.token_value, tree->number_of_children);
     for (i = 0; i < tree->number_of_children; i++){
       _asd_print(foutput, tree->children[i], profundidade+1);
     }

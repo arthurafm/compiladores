@@ -44,6 +44,7 @@
 %type<tree> function
 %type<tree> function_header
 %type<tree> function_body
+%type<tree> command_block
 %type<tree> simple_command_list
 %type<tree> simple_command
 %type<tree> expr
@@ -93,7 +94,7 @@ var: type id_list';';
 /* Functions */
 function: function_header function_body {
 
-	/* Ideia é ficar foo ---- = ---- ----- corpo */
+	/* Ideia é ficar foo ---- = ---- corpo */
 	$$ = $1;
 
 	lex_val lexem;
@@ -116,6 +117,13 @@ function_body: '{' '}' {
 	$$ = NULL;
 };
 
+command_block: '{' '}' {
+	$$ = NULL;
+};
+command_block: '{' simple_command_list '}' {
+	$$ = $2;
+};
+
 /* Simple Commands */
 simple_command_list: simple_command';' {
 	$$ = $1;
@@ -124,6 +132,14 @@ simple_command_list: simple_command';' simple_command_list {
 	$$ = $1;
 	asd_add_child($$, $3);
 };
+simple_command_list: command_block';' {
+	$$ = $1;
+};
+simple_command_list: command_block';' simple_command_list {
+	$$ = $1;
+	asd_add_child($$, $3);
+}
+
 
 simple_command: type id_list {
 	$$ = NULL;
@@ -148,6 +164,17 @@ simple_command: id'('argument_list')' {
 	lexem.token_value = strdup(tkn_value);
 	$$ = asd_new(lexem);
 	asd_add_child($$, $3);
+}; /* Function call */
+simple_command: id'('')' {
+	lex_val id_lex = $1->label;
+	char *tkn_value;
+	strcpy(tkn_value, "call ");
+	strcat(tkn_value, id_lex.token_value);
+	lex_val lexem;
+	lexem.num_line = get_line_number();
+	lexem.token_type = strdup("comando simples");
+	lexem.token_value = strdup(tkn_value);
+	$$ = asd_new(lexem);
 }; /* Function call */
 simple_command: TK_PR_RETURN precedence_A {
 	lex_val lexem;
@@ -204,6 +231,17 @@ expr: id'('argument_list')' {
 	lexem.token_value = strdup(tkn_value);
 	$$ = asd_new(lexem);
 	asd_add_child($$, $3);
+};
+expr: id'('')' {
+	lex_val id_lex = $1->label;
+	char *tkn_value;
+	strcpy(tkn_value, "call ");
+	strcat(tkn_value, id_lex.token_value);
+	lex_val lexem;
+	lexem.num_line = get_line_number();
+	lexem.token_type = strdup("comando simples");
+	lexem.token_value = strdup(tkn_value);
+	$$ = asd_new(lexem);
 };
 
 precedence_A: precedence_B;
@@ -397,10 +435,10 @@ param_list: param ',' param_list;
 param: type id;
 
 /* Arguments */
-argument_list: expr {
+argument_list: precedence_A {
 	$$ = $1;
 };
-argument_list: expr',' argument_list {
+argument_list: precedence_A',' argument_list {
 	$$ = $1;
 	asd_add_child($$, $3);
 };
