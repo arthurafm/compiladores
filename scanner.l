@@ -4,6 +4,8 @@
 	/* Emanuel Pacheco Thiel -  00170313 */
 
 	#include "parser.tab.h"
+
+	extern void *arvore;
 %}
 
 %option yylineno
@@ -45,11 +47,36 @@ return return TK_PR_RETURN;
 (\!\=) return TK_OC_NE;
 (\&) return TK_OC_AND;
 (\|) return TK_OC_OR;
-false return TK_LIT_FALSE;
-true return TK_LIT_TRUE;
-([a-z]|_)([a-z]|_|[0-9])* return TK_IDENTIFICADOR;
-([0-9])* return TK_LIT_INT;
-([0-9])*\.([0-9])+ return TK_LIT_FLOAT;
+false {
+	yylval.valor_lexico.num_line = get_line_number();
+	yylval.valor_lexico.token_type = strdup("literal");
+	yylval.valor_lexico.token_value = strdup(yytext);
+	return TK_LIT_FALSE;
+	}
+true {
+	yylval.valor_lexico.num_line = get_line_number();
+	yylval.valor_lexico.token_type = strdup("literal");
+	yylval.valor_lexico.token_value = strdup(yytext);
+	return TK_LIT_TRUE;
+	}
+([a-z]|_)([a-z]|_|[0-9])* {
+	yylval.valor_lexico.num_line = get_line_number();
+	yylval.valor_lexico.token_type = strdup("identificador");
+	yylval.valor_lexico.token_value = strdup(yytext);
+	return TK_IDENTIFICADOR;
+	}
+([0-9])* {
+	yylval.valor_lexico.num_line = get_line_number();
+	yylval.valor_lexico.token_type = strdup("literal");
+	yylval.valor_lexico.token_value = strdup(yytext);
+	return TK_LIT_INT;
+	}
+([0-9])*\.([0-9])+ {
+	yylval.valor_lexico.num_line = get_line_number();
+	yylval.valor_lexico.token_type = strdup("literal");
+	yylval.valor_lexico.token_value = strdup(yytext);
+	return TK_LIT_FLOAT;
+	}
 . return TK_ERRO;
 
 %%

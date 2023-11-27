@@ -1,10 +1,10 @@
-all: etapa2
+all: parser.y scanner.l utils.c
+	bison -d parser.y
+	flex -o scanner.lex.c scanner.l
+	gcc -fsanitize=address -g -Werror -o etapa3 utils.c scanner.lex.c parser.tab.c -lfl -lm 
 
-bison:
-	@(bison -d parser.y)
+utils: utils.h utils.c main.c
+	gcc -fsanitize=address -g -Werror -o etapa3 utils.c main.c
 
-lex.yy.c: scanner.l bison
-	@(flex scanner.l)	
-
-etapa2: lex.yy.c main.c parser.tab.c
-	@(gcc -o etapa2 main.c lex.yy.c parser.tab.c utils.c)
+clean:
+	rm -rf parser scanner etapa3
