@@ -93,17 +93,8 @@ var: type id_list';';
 
 /* Functions */
 function: function_header function_body {
-
-	/* Ideia é ficar foo ---- = ---- corpo */
 	$$ = $1;
-
-	lex_val lexem;
-	lexem.num_line = get_line_number();
-	lexem.token_type = strdup("funcao");
-	lexem.token_value = strdup("=");
-	asd_tree_t *t = asd_new(lexem);
-	asd_add_child($$, t);
-	asd_add_child(t, $2);
+	asd_add_child($$, $2);
 };
 
 function_header: param_list_parenthesis TK_OC_GE type'!' id {
