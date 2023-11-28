@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "utils.h"
-#define ARQUIVO_SAIDA "saida.dot"
 
 extern int yylineno;
 extern void *arvore;
@@ -19,19 +18,19 @@ void yyerror(const char *s) {
 	printf("In the line %d, the following error occurred: %s", get_line_number(), s);
 }
 
-tree_t *tree_new(lex_val label) {
-  tree_t *ret = NULL;
-  ret = calloc(1, sizeof(tree_t));
+tree_t *tree_new(lex_val info) {
+  tree_t *n = NULL;
+  n = calloc(1, sizeof(tree_t));
 
-  if (ret != NULL){
-    ret->label.num_line = label.num_line;
-    ret->label.token_type = strdup(label.token_type);
-    ret->label.token_value = strdup(label.token_value);
-    ret->number_of_children = 0;
-    ret->children = NULL;
+  if (n != NULL){
+    n->info.num_line = info.num_line;
+    n->info.token_type = strdup(info.token_type);
+    n->info.token_value = strdup(info.token_value);
+    n->number_of_children = 0;
+    n->children = NULL;
   }
 
-  return ret;
+  return n;
 }
 
 void tree_free(tree_t *tree) {
@@ -41,8 +40,8 @@ void tree_free(tree_t *tree) {
       tree_free(tree->children[i]);
     }
     free(tree->children);
-    free(tree->label.token_type);
-	  free(tree->label.token_value);
+    free(tree->info.token_type);
+	  free(tree->info.token_value);
     free(tree);
   } else {
     printf("Erro: %s recebeu parâmetro tree = %p.\n", __FUNCTION__, tree);
@@ -59,7 +58,7 @@ void tree_add_child(tree_t *tree, tree_t *child) {
 
 static void imprimirLabels(tree_t *tree) {
 	if (tree != NULL) {
-		printf("%p [label=\"%s\"]\n", (void *) tree, tree->label.token_value);
+		printf("%p [label=\"%s\"]\n", (void *) tree, tree->info.token_value);
 		for (int i = 0; i < tree->number_of_children; i++){
       imprimirLabels(tree->children[i]);
     }

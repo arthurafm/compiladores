@@ -8,7 +8,7 @@ typedef struct lex_value {
 } lex_val;
 
 typedef struct tree {
-  lex_val label;
+  lex_val info;
   int number_of_children;
   struct tree **children;
 } tree_t;
@@ -19,19 +19,13 @@ void set_root(tree_t *t);
 
 void yyerror(const char *s);
 
-/*
- * Função tree_new, cria um nó sem filhos com o label informado.
- */
-tree_t *tree_new(lex_val label);
+/* Cria uma nova árvore */
+tree_t *tree_new(lex_val info);
 
-/*
- * Função tree, libera recursivamente o nó e seus filhos.
- */
+/* Destrói uma árvore e seus filhos */
 void tree_free(tree_t *tree);
 
-/*
- * Função tree_add_child, adiciona child como filho de tree.
- */
+/* Adiciona child como filho de tree */
 void tree_add_child(tree_t *tree, tree_t *child);
 
 #endif //_UTILS_H_

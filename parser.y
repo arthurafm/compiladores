@@ -152,7 +152,7 @@ simple_command: id '=' precedence_A {
 	tree_add_child($$, $3);
 }; /* Attribution */
 simple_command: id'('argument_list')' {
-	lex_val id_lex = $1->label;
+	lex_val id_lex = $1->info;
 	int str_len = strlen(id_lex.token_value) + 7;
 	char *tkn_value = malloc(sizeof(char) * str_len);
 	strcpy(tkn_value, "call ");
@@ -166,7 +166,7 @@ simple_command: id'('argument_list')' {
 	tree_add_child($$, $3);
 }; /* Function call */
 simple_command: id'('')' {
-	lex_val id_lex = $1->label;
+	lex_val id_lex = $1->info;
 	int str_len = strlen(id_lex.token_value) + 7;
 	char *tkn_value = malloc(sizeof(char) * str_len);
 	strcpy(tkn_value, "call ");
@@ -223,7 +223,7 @@ expr: lit {
 	$$ = $1;
 };
 expr: id'('argument_list')' {
-	lex_val id_lex = $1->label;
+	lex_val id_lex = $1->info;
 	int str_len = strlen(id_lex.token_value) + 7;
 	char *tkn_value = malloc(sizeof(char) * str_len);
 	strcpy(tkn_value, "call ");
@@ -237,7 +237,7 @@ expr: id'('argument_list')' {
 	tree_add_child($$, $3);
 };
 expr: id'('')' {
-	lex_val id_lex = $1->label;
+	lex_val id_lex = $1->info;
 	int str_len = strlen(id_lex.token_value) + 7;
 	char *tkn_value = malloc(sizeof(char) * str_len);
 	strcpy(tkn_value, "call ");
