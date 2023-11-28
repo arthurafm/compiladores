@@ -155,7 +155,8 @@ simple_command: id '=' precedence_A {
 }; /* Attribution */
 simple_command: id'('argument_list')' {
 	lex_val id_lex = $1->label;
-	char *tkn_value;
+	int str_len = strlen(id_lex.token_value) + 7;
+	char *tkn_value = malloc(sizeof(char) * str_len);
 	strcpy(tkn_value, "call ");
 	strcat(tkn_value, id_lex.token_value);
 	lex_val lexem;
@@ -163,11 +164,13 @@ simple_command: id'('argument_list')' {
 	lexem.token_type = strdup("comando simples");
 	lexem.token_value = strdup(tkn_value);
 	$$ = asd_new(lexem);
+	free(tkn_value);
 	asd_add_child($$, $3);
 }; /* Function call */
 simple_command: id'('')' {
 	lex_val id_lex = $1->label;
-	char *tkn_value;
+	int str_len = strlen(id_lex.token_value) + 7;
+	char *tkn_value = malloc(sizeof(char) * str_len);
 	strcpy(tkn_value, "call ");
 	strcat(tkn_value, id_lex.token_value);
 	lex_val lexem;
@@ -175,6 +178,7 @@ simple_command: id'('')' {
 	lexem.token_type = strdup("comando simples");
 	lexem.token_value = strdup(tkn_value);
 	$$ = asd_new(lexem);
+	free(tkn_value);
 }; /* Function call */
 simple_command: TK_PR_RETURN precedence_A {
 	lex_val lexem;
@@ -222,7 +226,8 @@ expr: lit {
 };
 expr: id'('argument_list')' {
 	lex_val id_lex = $1->label;
-	char *tkn_value;
+	int str_len = strlen(id_lex.token_value) + 7;
+	char *tkn_value = malloc(sizeof(char) * str_len);
 	strcpy(tkn_value, "call ");
 	strcat(tkn_value, id_lex.token_value);
 	lex_val lexem;
@@ -230,11 +235,13 @@ expr: id'('argument_list')' {
 	lexem.token_type = strdup("comando simples");
 	lexem.token_value = strdup(tkn_value);
 	$$ = asd_new(lexem);
+	free(tkn_value);
 	asd_add_child($$, $3);
 };
 expr: id'('')' {
 	lex_val id_lex = $1->label;
-	char *tkn_value;
+	int str_len = strlen(id_lex.token_value) + 7;
+	char *tkn_value = malloc(sizeof(char) * str_len);
 	strcpy(tkn_value, "call ");
 	strcat(tkn_value, id_lex.token_value);
 	lex_val lexem;
@@ -242,6 +249,7 @@ expr: id'('')' {
 	lexem.token_type = strdup("comando simples");
 	lexem.token_value = strdup(tkn_value);
 	$$ = asd_new(lexem);
+	free(tkn_value);
 };
 
 precedence_A: precedence_B;
