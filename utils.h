@@ -7,31 +7,31 @@ typedef struct lex_value {
     char *token_value;
 } lex_val;
 
-typedef struct asd_tree {
+typedef struct tree {
   lex_val label;
   int number_of_children;
-  struct asd_tree **children;
-} asd_tree_t;
+  struct tree **children;
+} tree_t;
 
 int get_line_number();
 
-void set_root(asd_tree_t *t);
+void set_root(tree_t *t);
 
 void yyerror(const char *s);
 
 /*
- * Função asd_new, cria um nó sem filhos com o label informado.
+ * Função tree_new, cria um nó sem filhos com o label informado.
  */
-asd_tree_t *asd_new(lex_val label);
+tree_t *tree_new(lex_val label);
 
 /*
- * Função asd_tree, libera recursivamente o nó e seus filhos.
+ * Função tree, libera recursivamente o nó e seus filhos.
  */
-void asd_free(asd_tree_t *tree);
+void tree_free(tree_t *tree);
 
 /*
- * Função asd_add_child, adiciona child como filho de tree.
+ * Função tree_add_child, adiciona child como filho de tree.
  */
-void asd_add_child(asd_tree_t *tree, asd_tree_t *child);
+void tree_add_child(tree_t *tree, tree_t *child);
 
 #endif //_UTILS_H_
