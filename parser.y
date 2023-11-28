@@ -83,7 +83,6 @@ list: element list {
 	else {
 		$$ = $2;
 	}
-	
 };
 
 element: var {
@@ -118,8 +117,13 @@ simple_command_list: simple_command';' {
 	$$ = $1;
 };
 simple_command_list: simple_command';' simple_command_list {
-	$$ = $1;
-	asd_add_child($$, $3);
+	if ($1 != NULL) {
+		$$ = $1;
+		asd_add_child($$, $3);
+	}
+	else {
+		$$ = $3;
+	}
 };
 simple_command_list: function_body';' {
 	$$ = $1;
