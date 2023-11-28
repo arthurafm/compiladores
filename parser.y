@@ -44,7 +44,6 @@
 %type<tree> function
 %type<tree> function_header
 %type<tree> function_body
-%type<tree> command_block
 %type<tree> simple_command_list
 %type<tree> simple_command
 %type<tree> expr
@@ -108,13 +107,6 @@ function_body: '{' '}' {
 	$$ = NULL;
 };
 
-command_block: '{' '}' {
-	$$ = NULL;
-};
-command_block: '{' simple_command_list '}' {
-	$$ = $2;
-};
-
 /* Simple Commands */
 simple_command_list: simple_command';' {
 	$$ = $1;
@@ -123,12 +115,17 @@ simple_command_list: simple_command';' simple_command_list {
 	$$ = $1;
 	asd_add_child($$, $3);
 };
-simple_command_list: command_block';' {
+simple_command_list: function_body';' {
 	$$ = $1;
 };
-simple_command_list: command_block';' simple_command_list {
-	$$ = $1;
-	asd_add_child($$, $3);
+simple_command_list: function_body';' simple_command_list {
+	if ($1 != NULL) {
+		$$ = $1;
+		asd_add_child($$, $3);
+	}
+	else {
+		$$ = $3;
+	}
 }
 
 
