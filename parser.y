@@ -76,8 +76,14 @@ list: element {
 	$$ = $1;
 };
 list: element list {
-	$$ = $1;
-	asd_add_child($$, $2);
+	if ($1 != NULL) {
+		$$ = $1;
+		asd_add_child($$, $2);
+	}
+	else {
+		$$ = $2;
+	}
+	
 };
 
 element: var {
