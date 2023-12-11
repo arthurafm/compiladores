@@ -135,7 +135,7 @@ hash_table* create_table (int size) {
     return table;
 }
 
-void free_item (ht_item* item) {
+void free_item (ht_item *item) {
 
     free(item->key);
     free(item->nature);
@@ -193,21 +193,28 @@ void ht_insert (hash_table *table, char *key, int num_line, char *nature, char *
         }
         /* Colisão não é na mesma key */
         else {
-            handle_collision(table, item);
+            handle_collision(table, index, item);
             return;
         }
     }
 }
 
 /* A decidir o que esta função retornará -> Tipo? Token_value? */
-char* ht_search(hash_table *table, char *key) {
+char* ht_search (hash_table *table, char *key) {
     int index = hash_function(key);
     ht_item *item = table->items[index];
+    linked_list *head = table->overflow_buckets[index];
 
     if (item != NULL) {
         if (strcmp(item->key, key) == 0) {
             return item->type;
         }
+        if (head == NULL) {
+            return NULL;
+        }
+
+        item = head->item;
+        head = head->next;
     }
 
     return NULL;
@@ -222,7 +229,7 @@ linked_list *create_list () {
 linked_list* list_insert (linked_list* list, ht_item* item) {
     if (!list)
     {
-        linked_list* head = allocate_list();
+        linked_list* head = create_list();
         head->item = item;
         head->next = NULL;
         list = head;
@@ -230,7 +237,7 @@ linked_list* list_insert (linked_list* list, ht_item* item) {
     }
     else if (list->next == NULL)
     {
-        linked_list* node = allocate_list();
+        linked_list* node = create_list();
         node->item = item;
         node->next = NULL;
         list->next = node;
@@ -244,7 +251,7 @@ linked_list* list_insert (linked_list* list, ht_item* item) {
         temp = temp->next;
     }
 
-    linked_list* node = allocate_list();
+    linked_list* node = create_list();
     node->item = item;
     node->next = NULL;
     temp->next = node;
@@ -302,7 +309,84 @@ void free_overflow_buckets (hash_table* table) {
     linked_list **buckets = table->overflow_buckets;
 
     for (int i = 0; i < table->size; i++)
-        free_linkedlist(buckets[i]);
+        free_list(buckets[i]);
 
     free(buckets);
+}
+
+void handle_collision (hash_table *table, unsigned long index, ht_item *item) {
+    linked_list *head = table->overflow_buckets[index];
+
+    if (head == NULL)
+    {
+        head = create_list();
+        head->item = item;
+        table->overflow_buckets[index] = head;
+        return;
+    }
+    else {
+        table->overflow_buckets[index] = list_insert(head, item);
+        return;
+    }
+}
+
+void ht_delete(hash_table *table, char *key) {
+    int index = hash_function(key);
+    ht_item *item = table->items[index];
+    linked_list *head = table->overflow_buckets[index];
+
+    if (item == NULL)
+    {
+        return;
+    }
+    else {
+        if (head == NULL && strcmp(item->key, key) == 0)
+        {
+            table->items[index] = NULL;
+            free_item(item);
+            table->count--;
+            return;
+        }
+        else if (head != NULL)
+        {
+            if (strcmp(item->key, key) == 0)
+            {
+                free_item(item);
+                linked_list *node = head;
+                head = head->next;
+                node->next = NULL;
+                table->items[index] = create_item(node->item->key, node->item->num_line, node->item->nature, node->item->type, node->item->token_value);
+                free_list(node);
+                table->overflow_buckets[index] = head;
+                return;
+            }
+
+            linked_list *curr = head;
+            linked_list *prev = NULL;
+
+            while (curr)
+            {
+                if (strcmp(curr->item->key, key) == 0)
+                {
+                    if (prev == NULL)
+                    {
+                        free_list(head);
+                        table->overflow_buckets[index] = NULL;
+                        return;
+                    }
+                    else
+                    {
+                        prev->next = curr->next;
+                        curr->next = NULL;
+                        free_list(curr);
+                        table->overflow_buckets[index] = head;
+                        return;
+                    }
+                }
+
+                curr = curr->next;
+                prev = curr;
+            }
+        }
+    }
 }

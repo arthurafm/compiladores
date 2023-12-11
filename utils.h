@@ -12,7 +12,7 @@ typedef struct lex_value {
     int num_line;
     char *token_type;
     char *token_value;
-    char *token_type;
+    char *type;
 } lex_val;
 
 typedef struct tree {
@@ -75,7 +75,7 @@ ht_item* create_item (char *key, int num_line, char *nature, char *type, char *t
 hash_table* create_table (int size);
 
 /* Destrói um item de hash table */
-void free_item (ht_item* item)
+void free_item (ht_item *item);
 
 /* Destrói uma hash table */
 void free_table (hash_table *table);
@@ -97,5 +97,14 @@ ht_item* list_remove (linked_list* list);
 
 /* Destrói uma lista encadeada */
 void free_list (linked_list* list);
+
+/* Cria lista encadeada dentro de hash table */
+linked_list **create_overflow_buckets (hash_table *table);
+
+/* Destrói lista encadeada dentro de hash table */
+void free_overflow_buckets (hash_table* table);
+
+/* Lida com colisões */
+void handle_collision (hash_table *table, unsigned long index, ht_item *item);
 
 #endif //_UTILS_H_
