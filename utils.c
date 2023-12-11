@@ -130,6 +130,8 @@ hash_table* create_table (int size) {
         table->items[i] = NULL;
     }
 
+    table->overflow_buckets = create_overflow_buckets(table);
+
     return table;
 }
 
@@ -152,6 +154,7 @@ void free_table (hash_table *table) {
         }
     }
 
+    free_overflow_buckets(table);
     free(table->items);
     free(table);
 }
@@ -208,4 +211,98 @@ char* ht_search(hash_table *table, char *key) {
     }
 
     return NULL;
+}
+
+linked_list *create_list () {
+    linked_list* list = (linked_list *) malloc(sizeof(linked_list));
+
+    return list;
+}
+
+linked_list* list_insert (linked_list* list, ht_item* item) {
+    if (!list)
+    {
+        linked_list* head = allocate_list();
+        head->item = item;
+        head->next = NULL;
+        list = head;
+        return list;
+    }
+    else if (list->next == NULL)
+    {
+        linked_list* node = allocate_list();
+        node->item = item;
+        node->next = NULL;
+        list->next = node;
+        return list;
+    }
+
+    linked_list* temp = list;
+
+    while (temp->next->next)
+    {
+        temp = temp->next;
+    }
+
+    linked_list* node = allocate_list();
+    node->item = item;
+    node->next = NULL;
+    temp->next = node;
+    return list;
+}
+
+ht_item* list_remove (linked_list* list) {
+    if (!list)
+        return NULL;
+
+    if (!list->next)
+        return NULL;
+
+    linked_list* node = list->next;
+    linked_list* temp = list;
+    temp->next = NULL;
+    list = node;
+    ht_item* it = NULL;
+    memcpy(temp->item, it, sizeof(ht_item));
+    free(temp->item->key);
+    free(temp->item->nature);
+    free(temp->item->type);
+    free(temp->item->token_value);
+    free(temp->item);
+    free(temp);
+    return it;
+}
+
+void free_list (linked_list* list) {
+    linked_list* temp = list;
+
+    while (list)
+    {
+        temp = list;
+        list = list->next;
+        free(temp->item->key);
+        free(temp->item->nature);
+        free(temp->item->type);
+        free(temp->item->token_value);
+        free(temp->item);
+        free(temp);
+    }
+}
+
+linked_list **create_overflow_buckets (hash_table *table) {
+    linked_list **buckets = (linked_list**) calloc(table->size, sizeof(linked_list*));
+
+    for (int i = 0; i < table->size; i++)
+        buckets[i] = NULL;
+
+    return buckets;
+}
+
+void free_overflow_buckets (hash_table* table) {
+    linked_list **buckets = table->overflow_buckets;
+
+    for (int i = 0; i < table->size; i++)
+        free_linkedlist(buckets[i]);
+
+    free(buckets);
 }

@@ -31,16 +31,17 @@ typedef struct hash_table_item {
     char *token_value;
 } ht_item;
 
-typedef struct hashtable {
-    ht_item **items;
-    int size;
-    int count;
-} hash_table;
-
 typedef struct linkedlist {
     ht_item *item;
     struct linkedlist* next;
 } linked_list;
+
+typedef struct hashtable {
+    ht_item **items;
+    linked_list **overflow_buckets;
+    int size;
+    int count;
+} hash_table;
 
 /* Retorna o número da linha atual do código-fonte */
 int get_line_number();
@@ -84,5 +85,17 @@ void ht_insert (hash_table *table, char *key, int num_line, char *nature, char *
 
 /* Busca em uma hash table */
 char* ht_search(hash_table *table, char *key);
+
+/* Cria uma lista encadeada */
+linked_list *create_list (); 
+
+/* Insere na lista encadeada */
+linked_list* list_insert (linked_list* list, ht_item* item);
+
+/* Remove da lista encadeada */
+ht_item* list_remove (linked_list* list);
+
+/* Destrói uma lista encadeada */
+void free_list (linked_list* list);
 
 #endif //_UTILS_H_
