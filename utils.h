@@ -107,4 +107,7 @@ void free_overflow_buckets (hash_table* table);
 /* Lida com colisões */
 void handle_collision (hash_table *table, unsigned long index, ht_item *item);
 
+/* Deleta de uma hash table */
+void ht_delete(hash_table *table, char *key);
+
 #endif //_UTILS_H_
