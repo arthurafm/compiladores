@@ -49,7 +49,6 @@ typedef struct pilha_t{
 	int num_escopos;
 } pilha;
 
-
 /* Retorna o número da linha atual do código-fonte */
 int get_line_number();
 

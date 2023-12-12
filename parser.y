@@ -8,7 +8,7 @@
 	int yylex(void);
 	void yyerror(char const *mensagem);
 
-	pilha *stack = criarPilha();
+	extern void *stack;
 %}
 
 %code requires { #include "utils.h" }
@@ -153,7 +153,7 @@ simple_command: type id_list {
 } /* Variable declaration */
 simple_command: id '=' precedence_A {
 	lex_val id_info = $1->info, expr_info = $3->info;
-	if (ht_search(id_info.token_value) == NULL) {
+	if (encontrarItemPilha(stack, id_info.token_value) == NULL) {
 		/* Erro -> Variável ainda não declarada */
 	}
 	else if (strcmp(id_info.type, expr_info.type) != 0) {
@@ -171,8 +171,8 @@ simple_command: id '=' precedence_A {
 }; /* Attribution */
 simple_command: id'('argument_list')' {
 	lex_val id_lex = $1->info;
-	ht_item id_hash_table = ht_search(stack, hash_function(id_lex.token_value));
-	if (strcmp(strdup("function", id_hash_table.nature) == 0)) {
+	ht_item *id_hash_table = encontrarItemPilha(stack, id_lex.token_value);
+	if (strcmp(strdup("function"), id_hash_table->nature) == 0) {
 		int str_len = strlen(id_lex.token_value) + 7;
 		char *tkn_value = malloc(sizeof(char) * str_len);
 		strcpy(tkn_value, "call ");
@@ -192,8 +192,8 @@ simple_command: id'('argument_list')' {
 }; /* Function call */
 simple_command: id'('')' {
 	lex_val id_lex = $1->info;
-	ht_item id_hash_table = ht_search(stack, hash_function(id_lex.token_value));
-	if (strcmp(strdup("function", id_hash_table.nature) == 0)) {
+	ht_item *id_hash_table = encontrarItemPilha(stack, id_lex.token_value);
+	if (strcmp(strdup("function"), id_hash_table->nature) == 0) {
 		int str_len = strlen(id_lex.token_value) + 7;
 		char *tkn_value = malloc(sizeof(char) * str_len);
 		strcpy(tkn_value, "call ");
@@ -256,8 +256,8 @@ expr: lit {
 };
 expr: id'('argument_list')' {
 	lex_val id_lex = $1->info;
-	ht_item id_hash_table = ht_search(stack, hash_function(id_lex.token_value));
-	if (strcmp(strdup("function", id_hash_table.nature) == 0)) {
+	ht_item *id_hash_table = encontrarItemPilha(stack, id_lex.token_value);
+	if (strcmp(strdup("function"), id_hash_table->nature) == 0) {
 		int str_len = strlen(id_lex.token_value) + 7;
 		char *tkn_value = malloc(sizeof(char) * str_len);
 		strcpy(tkn_value, "call ");
@@ -277,8 +277,8 @@ expr: id'('argument_list')' {
 };
 expr: id'('')' {
 	lex_val id_lex = $1->info;
-	ht_item id_hash_table = ht_search(stack, hash_function(id_lex.token_value));
-	if (strcmp(strdup("function", id_hash_table.nature) == 0)) {
+	ht_item *id_hash_table = encontrarItemPilha(stack, id_lex.token_value);
+	if (strcmp(strdup("function"), id_hash_table->nature) == 0) {
 		int str_len = strlen(id_lex.token_value) + 7;
 		char *tkn_value = malloc(sizeof(char) * str_len);
 		strcpy(tkn_value, "call ");
