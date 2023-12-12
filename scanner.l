@@ -50,30 +50,35 @@ false {
 	yylval.valor_lexico.num_line = get_line_number();
 	yylval.valor_lexico.token_type = strdup("literal");
 	yylval.valor_lexico.token_value = strdup(yytext);
+	yylval.valor_lexico.type = strdup("bool");
 	return TK_LIT_FALSE;
 	}
 true {
 	yylval.valor_lexico.num_line = get_line_number();
 	yylval.valor_lexico.token_type = strdup("literal");
 	yylval.valor_lexico.token_value = strdup(yytext);
+	yylval.valor_lexico.type = strdup("bool");
 	return TK_LIT_TRUE;
 	}
 ([a-z]|_)([a-z]|_|[0-9])* {
 	yylval.valor_lexico.num_line = get_line_number();
 	yylval.valor_lexico.token_type = strdup("identificador");
 	yylval.valor_lexico.token_value = strdup(yytext);
+	yylval.valor_lexico.type = strdup("");
 	return TK_IDENTIFICADOR;
 	}
 ([0-9])* {
 	yylval.valor_lexico.num_line = get_line_number();
 	yylval.valor_lexico.token_type = strdup("literal");
 	yylval.valor_lexico.token_value = strdup(yytext);
+	yylval.valor_lexico.type = strdup("int");
 	return TK_LIT_INT;
 	}
 ([0-9])*\.([0-9])+ {
 	yylval.valor_lexico.num_line = get_line_number();
 	yylval.valor_lexico.token_type = strdup("literal");
 	yylval.valor_lexico.token_value = strdup(yytext);
+	yylval.valor_lexico.type = strdup("float");
 	return TK_LIT_FLOAT;
 	}
 . return TK_ERRO;

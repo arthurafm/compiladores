@@ -5,6 +5,7 @@
 
 extern int yylineno;
 extern void *arvore;
+extern void *stack;
 
 int get_line_number() {
     return yylineno;
@@ -102,19 +103,17 @@ unsigned long hash_function (unsigned char *str, int size) {
     return hash % size;
 }
 
-ht_item* create_item (char *key, int num_line, char *nature, char *type, char *token_value) {
+ht_item* create_item (char *key, int num_line, char *nature, char *type) {
 
     ht_item *item = (ht_item *) malloc(sizeof(ht_item));
     item->key = (char *) malloc(strlen(key) + 1);
     item->nature = (char *) malloc(strlen(nature) + 1);
     item->type = (char *) malloc(strlen(type) + 1);
-    item->token_value = (char *) malloc(strlen(token_value) + 1);
 
     strcpy(item->key, key);
     item->num_line = num_line;
     strcpy(item->nature, nature);
     strcpy(item->type, type);
-    strcpy(item->token_value, token_value);
 
     return item;
 }
@@ -140,7 +139,6 @@ void free_item (ht_item *item) {
     free(item->key);
     free(item->nature);
     free(item->type);
-    free(item->token_value);
 
     free(item);
 }
@@ -159,9 +157,9 @@ void free_table (hash_table *table) {
     free(table);
 }
 
-void ht_insert (hash_table *table, char *key, int num_line, char *nature, char *type, char *token_value) {
+void ht_insert (hash_table *table, char *key, int num_line, char *nature, char *type) {
     
-    ht_item *item = create_item(key, num_line, nature, type, token_value);
+    ht_item *item = create_item(key, num_line, nature, type);
     
     int index = hash_function(key, table->size);
 
@@ -183,7 +181,6 @@ void ht_insert (hash_table *table, char *key, int num_line, char *nature, char *
             table->items[index]->num_line = num_line;
             strcpy(table->items[index]->nature, nature);
             strcpy(table->items[index]->type, type);
-            strcpy(table->items[index]->token_value, token_value);
             return;
         }
         else {
@@ -194,15 +191,14 @@ void ht_insert (hash_table *table, char *key, int num_line, char *nature, char *
     
 }
 
-/* A decidir o que esta função retornará -> Tipo? Token_value? */
-char* ht_search (hash_table *table, char *key) {
+ht_item* ht_search (hash_table *table, char *key) {
     int index = hash_function(key, table->size);
     ht_item *item = table->items[index];
     linked_list *head = table->overflow_buckets[index];
 
     if (item != NULL) {
         if (strcmp(item->key, key) == 0) {
-            return item->type;
+            return item;
         }
         if (head == NULL) {
             return NULL;
@@ -269,7 +265,6 @@ ht_item* list_remove (linked_list* list) {
     free(temp->item->key);
     free(temp->item->nature);
     free(temp->item->type);
-    free(temp->item->token_value);
     free(temp->item);
     free(temp);
     return it;
@@ -285,7 +280,6 @@ void free_list (linked_list* list) {
         free(temp->item->key);
         free(temp->item->nature);
         free(temp->item->type);
-        free(temp->item->token_value);
         free(temp->item);
         free(temp);
     }
@@ -350,7 +344,7 @@ void ht_delete(hash_table *table, char *key) {
                 linked_list *node = head;
                 head = head->next;
                 node->next = NULL;
-                table->items[index] = create_item(node->item->key, node->item->num_line, node->item->nature, node->item->type, node->item->token_value);
+                table->items[index] = create_item(node->item->key, node->item->num_line, node->item->nature, node->item->type);
                 free_list(node);
                 table->overflow_buckets[index] = head;
                 return;
@@ -397,12 +391,12 @@ pilha *criarPilha(){
 void addEscopo(pilha* pilha_atual){
 	pilha_atual->num_escopos++;
 	pilha_atual->escopos = realloc(pilha_atual->escopos, pilha_atual->num_escopos * sizeof(hash_table*));
-	hash_table *temp = create_table(40);
+	hash_table *temp = create_table(SIZE_TABLE);
 	pilha_atual->escopos[pilha_atual->num_escopos - 1] = temp;
 }
 
-void escluirEscopo(pilha* pilha_atual){
-	if(pilha_atual->num_escopos > 1){
+void excluirEscopo(pilha* pilha_atual){
+    	if(pilha_atual->num_escopos > 1){
 		hash_table *hash_table_excluir = pilha_atual->escopos[pilha_atual->num_escopos - 1];
 		free_table(hash_table_excluir);
 		pilha_atual->num_escopos--;
@@ -410,7 +404,7 @@ void escluirEscopo(pilha* pilha_atual){
 	}
 }
 
-char* encontrarItemPilha(pilha* pilha_atual, char *key){
+ht_item* encontrarItemPilha(pilha* pilha_atual, char *key){
 	int contador = pilha_atual->num_escopos;
 	hash_table *hash_table_atual;
 	while(contador >= 1){
@@ -423,8 +417,8 @@ char* encontrarItemPilha(pilha* pilha_atual, char *key){
 	return NULL;
 }
 
-void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, char *type, char *token_value){
+void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, char *type){
 	hash_table *hash_table_atual;
 	hash_table_atual = pilha_atual->escopos[pilha_atual->num_escopos - 1];
-	ht_insert(hash_table_atual, key, num_line, nature, type, token_value);
+	ht_insert(hash_table_atual, key, num_line, nature, type);
 }

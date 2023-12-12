@@ -6,6 +6,8 @@
 #define ERR_VARIABLE    20
 #define ERR_FUNCTION    21
 
+#define SIZE_TABLE 40
+
 /* --- Estrutura da AST --- */
 
 typedef struct lex_value {
@@ -28,7 +30,6 @@ typedef struct hash_table_item {
     int num_line;
     char *nature;
     char *type;
-    char *token_value;
 } ht_item;
 
 typedef struct linkedlist {
@@ -75,7 +76,7 @@ void tree_add_child(tree_t *tree, tree_t *child);
 unsigned long hash_function (unsigned char *str, int size);
 
 /* Cria um item na hash table */
-ht_item* create_item (char *key, int num_line, char *nature, char *type, char *token_value);
+ht_item* create_item (char *key, int num_line, char *nature, char *type);
 
 /* Cria uma hash table */
 hash_table* create_table (int size);
@@ -87,10 +88,10 @@ void free_item (ht_item *item);
 void free_table (hash_table *table);
 
 /* Insere em uma hash table */
-void ht_insert (hash_table *table, char *key, int num_line, char *nature, char *type, char *token_value);
+void ht_insert (hash_table *table, char *key, int num_line, char *nature, char *type);
 
 /* Busca em uma hash table */
-char* ht_search(hash_table *table, char *key);
+ht_item* ht_search(hash_table *table, char *key);
 
 /* Cria uma lista encadeada */
 linked_list *create_list (); 
@@ -114,12 +115,12 @@ void free_overflow_buckets (hash_table* table);
 void handle_collision (hash_table *table, unsigned long index, ht_item *item);
 
 /* Deleta de uma hash table */
-void ht_delete(hash_table *table, char *key);
+void ht_delete (hash_table *table, char *key);
 
 pilha *criarPilha();
 void addEscopo(pilha* pilha_atual);
-void escluirEscopo(pilha* pilha_atual);
-char* encontrarItemPilha(pilha* pilha_atual, char *key);
-void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, char *type, char *token_value);
+void excluirEscopo(pilha* pilha_atual);
+ht_item* encontrarItemPilha(pilha* pilha_atual, char *key);
+void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, char *type);
 
 #endif //_UTILS_H_
