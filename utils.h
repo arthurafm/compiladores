@@ -72,7 +72,7 @@ void tree_add_child(tree_t *tree, tree_t *child);
 /* --- Tabela de Símbolos --- */
 
 /* Função de hash */
-unsigned long hash_function (unsigned char *str);
+unsigned long hash_function (unsigned char *str, int size);
 
 /* Cria um item na hash table */
 ht_item* create_item (char *key, int num_line, char *nature, char *type, char *token_value);

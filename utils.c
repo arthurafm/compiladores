@@ -92,14 +92,14 @@ void exporta (void *arvore) {
 /* --- Tabela de Símbolos --- */
 
 /* Algoritmo djb2, disponível em http://www.cse.yorku.ca/~oz/hash.html */
-unsigned long hash_function (unsigned char *str) {
+unsigned long hash_function (unsigned char *str, int size) {
     unsigned long hash = 5381;
     int c;
 
     while (c = *str++)
         hash = ((hash << 5) + hash) + c;
 
-    return hash;
+    return hash % size;
 }
 
 ht_item* create_item (char *key, int num_line, char *nature, char *type, char *token_value) {
@@ -162,27 +162,22 @@ void free_table (hash_table *table) {
 void ht_insert (hash_table *table, char *key, int num_line, char *nature, char *type, char *token_value) {
     
     ht_item *item = create_item(key, num_line, nature, type, token_value);
-    int index = hash_function(key);
+    
+    int index = hash_function(key, table->size);
 
     ht_item *cur_item = table->items[index];
 
-    /* Não houve colisão */
     if (cur_item == NULL) {
-        /* A hash table está cheia */
         if (table->count == table->size) {
             printf("Insert error: hash table is full.\n");
             free(item);
             return;
         }
 
-        /* Caso a hash table não esteja cheia */
         table->items[index] = item;
         table->count++;
     }
-    /* Houve colisão */
     else {
-        /* A mesma key está na tabela */
-        /* TODO: Tratamento especial da E4 --> Caso o identificador já esteja na tabela, é necessário que se retorne um erro */
         if (strcmp(cur_item->key, key) == 0) {
             strcpy(table->items[index]->key, key);
             table->items[index]->num_line = num_line;
@@ -191,17 +186,17 @@ void ht_insert (hash_table *table, char *key, int num_line, char *nature, char *
             strcpy(table->items[index]->token_value, token_value);
             return;
         }
-        /* Colisão não é na mesma key */
         else {
             handle_collision(table, index, item);
             return;
         }
     }
+    
 }
 
 /* A decidir o que esta função retornará -> Tipo? Token_value? */
 char* ht_search (hash_table *table, char *key) {
-    int index = hash_function(key);
+    int index = hash_function(key, table->size);
     ht_item *item = table->items[index];
     linked_list *head = table->overflow_buckets[index];
 
@@ -331,7 +326,7 @@ void handle_collision (hash_table *table, unsigned long index, ht_item *item) {
 }
 
 void ht_delete(hash_table *table, char *key) {
-    int index = hash_function(key);
+    int index = hash_function(key, table->size);
     ht_item *item = table->items[index];
     linked_list *head = table->overflow_buckets[index];
 
@@ -402,11 +397,12 @@ pilha *criarPilha(){
 void addEscopo(pilha* pilha_atual){
 	pilha_atual->num_escopos++;
 	pilha_atual->escopos = realloc(pilha_atual->escopos, pilha_atual->num_escopos * sizeof(hash_table*));
-	pilha_atual->escopos[pilha_atual->num_escopos - 1] = create_table(40);
+	hash_table *temp = create_table(40);
+	pilha_atual->escopos[pilha_atual->num_escopos - 1] = temp;
 }
 
 void escluirEscopo(pilha* pilha_atual){
-	hash_table *hash_table_excluir = pilha_atual->escopos[pilha_atual->num_escopos];
+	hash_table *hash_table_excluir = pilha_atual->escopos[pilha_atual->num_escopos - 1];
 	free_table(hash_table_excluir);
 	pilha_atual->num_escopos--;
 	pilha_atual->escopos = realloc(pilha_atual->escopos, pilha_atual->num_escopos * sizeof(hash_table*));
@@ -414,16 +410,19 @@ void escluirEscopo(pilha* pilha_atual){
 
 char* encontrarItemPilha(pilha* pilha_atual, char *key){
 	int contador = 0;
-	char *retorno = NULL;
 	hash_table *hash_table_atual;
-	while(contador < pilha_atual->num_escopos && retorno == NULL){
+	while(contador < pilha_atual->num_escopos){
 		hash_table_atual = pilha_atual->escopos[contador];
-		retorno = ht_search(hash_table_atual, key);
+		if(ht_search(hash_table_atual, key) != NULL){
+			return ht_search(hash_table_atual, key);
+		}
 		contador++;
 	}
-	return retorno;
+	return NULL;
 }
 
 void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, char *type, char *token_value){
-	ht_insert(pilha_atual->escopos[pilha_atual->num_escopos - 1], key, num_line, nature, type, token_value);
+	hash_table *hash_table_atual;
+	hash_table_atual = pilha_atual->escopos[pilha_atual->num_escopos - 1];
+	ht_insert(hash_table_atual, key, num_line, nature, type, token_value);
 }
