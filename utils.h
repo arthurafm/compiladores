@@ -120,5 +120,6 @@ pilha *criarPilha();
 void addEscopo(pilha* pilha_atual);
 void escluirEscopo(pilha* pilha_atual);
 char* encontrarItemPilha(pilha* pilha_atual, char *key);
+void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, char *type, char *token_value);
 
 #endif //_UTILS_H_

@@ -423,3 +423,7 @@ char* encontrarItemPilha(pilha* pilha_atual, char *key){
 	}
 	return retorno;
 }
+
+void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, char *type, char *token_value){
+	ht_insert(pilha_atual->escopos[pilha_atual->num_escopos - 1], key, num_line, nature, type, token_value);
+}
