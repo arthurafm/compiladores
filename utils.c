@@ -402,10 +402,12 @@ void addEscopo(pilha* pilha_atual){
 }
 
 void escluirEscopo(pilha* pilha_atual){
-	hash_table *hash_table_excluir = pilha_atual->escopos[pilha_atual->num_escopos - 1];
-	free_table(hash_table_excluir);
-	pilha_atual->num_escopos--;
-	pilha_atual->escopos = realloc(pilha_atual->escopos, pilha_atual->num_escopos * sizeof(hash_table*));
+	if(pilha_atual->num_escopos > 1){
+		hash_table *hash_table_excluir = pilha_atual->escopos[pilha_atual->num_escopos - 1];
+		free_table(hash_table_excluir);
+		pilha_atual->num_escopos--;
+		pilha_atual->escopos = realloc(pilha_atual->escopos, pilha_atual->num_escopos * sizeof(hash_table*));
+	}
 }
 
 char* encontrarItemPilha(pilha* pilha_atual, char *key){
