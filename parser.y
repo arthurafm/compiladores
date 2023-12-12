@@ -4,11 +4,16 @@
 	/* Emanuel Pacheco Thiel -  00170313 */
 	
 	#include <string.h>
+	#include "utils.h"
 
 	int yylex(void);
 	void yyerror(char const *mensagem);
 
-	extern void *stack;
+	extern pilha *stack;
+
+	/* Problemas atuais: */
+	/* Retorno de erro */
+	/* Operações tem tipos específicos? */
 %}
 
 %code requires { #include "utils.h" }
@@ -18,6 +23,7 @@
 %union {
 	lex_val valor_lexico;
 	tree_t *tree;
+	char* list;
 }
 
 %token TK_PR_INT
@@ -60,6 +66,7 @@
 %type<tree> id
 %type<tree> argument_list
 %type<valor_lexico> type
+%type<list> id_list
 
 %start program
 
@@ -97,7 +104,20 @@ element: function {
 
 /* Variables */
 var: type id_list';' {
+	char *list = $2;
+	char *type = $1.type;
+	char* s = strdup(",");
+	char *token;
 
+	token = strtok(list, s);
+
+	while (token != NULL) {
+		addItemEscopo(stack, token, get_line_number(), strdup("variable"), strdup(type));
+	}
+
+	free(list);
+	free(token);
+	free(s);
 };
 
 /* Functions */
@@ -115,11 +135,19 @@ function_header: param_list_parenthesis TK_OC_GE type'!' id {
 	free(id_type);
 };
 
-function_body: '{' simple_command_list '}' {
-	$$ = $2;
+function_body: open_closure '{' simple_command_list '}' close_closure {
+	$$ = $3;
 };
-function_body: '{' '}' {
+function_body: open_closure '{' '}' close_closure {
 	$$ = NULL;
+};
+
+open_closure: {
+	addEscopo(stack);
+};
+
+close_closure: {
+	excluirEscopo(stack);
 };
 
 /* Simple Commands */
@@ -149,12 +177,27 @@ simple_command_list: function_body';' simple_command_list {
 }
 
 simple_command: type id_list {
+	char *list = $2;
+	char *type = $1.type;
+	char* s = strdup(",");
+	char *token;
+
+	token = strtok(list, s);
+
+	while (token != NULL) {
+		addItemEscopo(stack, token, get_line_number(), strdup("variable"), strdup(type));
+	}
+
+	free(list);
+	free(token);
+	free(s);
 	$$ = NULL;
 } /* Variable declaration */
 simple_command: id '=' precedence_A {
 	lex_val id_info = $1->info, expr_info = $3->info;
 	if (encontrarItemPilha(stack, id_info.token_value) == NULL) {
 		/* Erro -> Variável ainda não declarada */
+		return ERR_UNDECLARED;
 	}
 	else if (strcmp(id_info.type, expr_info.type) != 0) {
 		/* Erro -> Variável não é do tipo da expressão */
@@ -272,6 +315,7 @@ expr: id'('argument_list')' {
 	}
 	else {
 		/* Erro -> Identificador não é função */
+		return ERR_VARIABLE;
 	}
 	
 };
@@ -292,6 +336,7 @@ expr: id'('')' {
 	}
 	else {
 		/* Erro -> Identificador não é função */
+		return ERR_VARIABLE;
 	}
 };
 
@@ -493,8 +538,23 @@ id: TK_IDENTIFICADOR {
 	$$ = tree_new($1);
 };
 
-id_list: id;
-id_list: id',' id_list;
+id_list: id {
+	char *id_name = strdup($1->info.token_value);
+	$$ = strdup(id_name);
+	free(id_name);
+};
+id_list: id',' id_list {
+	char *id_name = strdup($1->info.token_value);
+	int old_id_list_size = strlen($3) + 1;
+	char *new_list = malloc(sizeof(char) * (strlen(id_name) + 2 + old_id_list_size));
+
+	strcpy(new_list, id_name);
+	strcat(new_list, strdup(","));
+	strcat(new_list, $3);
+
+	free(new_list);
+	free(id_name);
+};
 
 /* Literals */
 lit: TK_LIT_INT {

@@ -5,9 +5,6 @@
 
 extern int yylineno;
 extern void *arvore;
-extern void *stack;
-
-stack = (pilha *) criarPilha();
 
 int get_line_number() {
     return yylineno;
