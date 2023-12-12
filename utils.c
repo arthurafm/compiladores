@@ -409,14 +409,14 @@ void escluirEscopo(pilha* pilha_atual){
 }
 
 char* encontrarItemPilha(pilha* pilha_atual, char *key){
-	int contador = 0;
+	int contador = pilha_atual->num_escopos;
 	hash_table *hash_table_atual;
-	while(contador < pilha_atual->num_escopos){
-		hash_table_atual = pilha_atual->escopos[contador];
+	while(contador >= 1){
+		hash_table_atual = pilha_atual->escopos[contador - 1];
 		if(ht_search(hash_table_atual, key) != NULL){
 			return ht_search(hash_table_atual, key);
 		}
-		contador++;
+		contador--;
 	}
 	return NULL;
 }
