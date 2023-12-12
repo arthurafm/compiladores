@@ -43,6 +43,12 @@ typedef struct hashtable {
     int count;
 } hash_table;
 
+typedef struct pilha_t{
+	hash_table** escopos;
+	int num_escopos;
+} pilha;
+
+
 /* Retorna o número da linha atual do código-fonte */
 int get_line_number();
 
@@ -109,5 +115,10 @@ void handle_collision (hash_table *table, unsigned long index, ht_item *item);
 
 /* Deleta de uma hash table */
 void ht_delete(hash_table *table, char *key);
+
+pilha *criarPilha();
+void addEscopo(pilha* pilha_atual);
+void escluirEscopo(pilha* pilha_atual);
+char* encontrarItemPilha(pilha* pilha_atual, char *key);
 
 #endif //_UTILS_H_

@@ -390,3 +390,36 @@ void ht_delete(hash_table *table, char *key) {
         }
     }
 }
+
+pilha *criarPilha(){
+    pilha *nova_pilha = (pilha *) malloc(sizeof(pilha));
+    nova_pilha->num_escopos = 0;
+    nova_pilha->escopos = NULL;
+    addEscopo(nova_pilha);
+    return nova_pilha;
+}
+
+void addEscopo(pilha* pilha_atual){
+	pilha_atual->num_escopos++;
+	pilha_atual->escopos = realloc(pilha_atual->escopos, pilha_atual->num_escopos * sizeof(hash_table*));
+	pilha_atual->escopos[pilha_atual->num_escopos - 1] = create_table(40);
+}
+
+void escluirEscopo(pilha* pilha_atual){
+	hash_table *hash_table_excluir = pilha_atual->escopos[pilha_atual->num_escopos];
+	free_table(hash_table_excluir);
+	pilha_atual->num_escopos--;
+	pilha_atual->escopos = realloc(pilha_atual->escopos, pilha_atual->num_escopos * sizeof(hash_table*));
+}
+
+char* encontrarItemPilha(pilha* pilha_atual, char *key){
+	int contador = 0;
+	char *retorno = NULL;
+	hash_table *hash_table_atual;
+	while(contador < pilha_atual->num_escopos && retorno == NULL){
+		hash_table_atual = pilha_atual->escopos[contador];
+		retorno = ht_search(hash_table_atual, key);
+		contador++;
+	}
+	return retorno;
+}
