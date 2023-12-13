@@ -468,10 +468,10 @@ char *inferencia_tipos(char *tipo1, char *tipo2){
 	if(strcmp(tipo1, tipo2) == 0){
 		retorno = strdup(tipo1);
 	}
-	else if(strcmp("float", tipo1) || strcmp("float", tipo2)){
+	else if(strcmp("float", tipo1) == 0 || strcmp("float", tipo2) == 0){
 		retorno = strdup("float");
 	}
-	else if(strcmp("int", tipo1) || strcmp("int", tipo2)){
+	else if(strcmp("int", tipo1) == 0 || strcmp("int", tipo2) == 0){
 		retorno = strdup("int");
 	}
 	else{
