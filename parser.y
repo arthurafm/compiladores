@@ -225,13 +225,15 @@ simple_command: id '=' precedence_A {
 	}
 	else {
 		 if (strcmp(id_hash_table->type, expr_info.type) != 0) {
-			/* Erro -> Variável não é do tipo da expressão */
+			 /* Erro -> Variável não é do tipo da expressão */
+			printf("\nvariavel do tipo errado\n");
 		 }
 	 	else {
 	 		lex_val lexem;
 	 		lexem.num_line = get_line_number();
 	 		lexem.token_type = strdup("comando simples");
 	 		lexem.token_value = strdup("=");
+	 		lexem.type = strdup(id_hash_table->type);
 	 		$$ = tree_new(lexem);
 	 		tree_add_child($$, $1);
 	 		tree_add_child($$, $3);
@@ -256,6 +258,7 @@ simple_command: id'('argument_list')' {
 			lexem.num_line = get_line_number();
 			lexem.token_type = strdup("comando simples");
 			lexem.token_value = strdup(tkn_value);
+			lexem.type = strdup(id_hash_table->type);
 			$$ = tree_new(lexem);
 			free(tkn_value);
 			tree_add_child($$, $3);
@@ -285,6 +288,7 @@ simple_command: id'('')' {
 			lexem.num_line = get_line_number();
 			lexem.token_type = strdup("comando simples");
 			lexem.token_value = strdup(tkn_value);
+			lexem.type = strdup(id_hash_table->type);
 			$$ = tree_new(lexem);
 			free(tkn_value);
 		}
@@ -419,34 +423,44 @@ expr: id'('')' {
 	
 };
 
-precedence_A: precedence_B;
+precedence_A: precedence_B{
+	$$ = $1;
+};
 precedence_A: precedence_A TK_OC_OR precedence_B {
 	lex_val lexem;
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup("|");
+	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
 
-precedence_B: precedence_C;
+precedence_B: precedence_C{
+	$$ = $1;
+};
 precedence_B: precedence_B TK_OC_AND precedence_C {
 	lex_val lexem;
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup("&");
+	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
 
-precedence_C: precedence_D;
+precedence_C: precedence_D{
+	$$ = $1;
+};
 precedence_C: precedence_C TK_OC_EQ precedence_D {
 	lex_val lexem;
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup("==");
+	//lexem.type = strdup(inferencia_tipos($1->info.type, $3->info.type));
+	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
@@ -456,17 +470,22 @@ precedence_C: precedence_C TK_OC_NE precedence_D {
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup("!=");
+	//lexem.type = strdup(inferencia_tipos($1->info.type, $3->info.type));
+	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
 
-precedence_D: precedence_E;
+precedence_D: precedence_E{
+	$$ = $1;
+};
 precedence_D: precedence_D '<' precedence_E {
 	lex_val lexem;
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup("<");
+	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
@@ -476,6 +495,7 @@ precedence_D: precedence_D '>' precedence_E {
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup(">");
+	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
@@ -485,6 +505,7 @@ precedence_D: precedence_D TK_OC_LE precedence_E {
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup("<=");
+	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
@@ -494,17 +515,21 @@ precedence_D: precedence_D TK_OC_GE precedence_E {
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup(">=");
+	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
 
-precedence_E: precedence_F;
+precedence_E: precedence_F{
+	$$ = $1;
+};
 precedence_E: precedence_E '+' precedence_F {
 	lex_val lexem;
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup("+");
+	lexem.type = strdup(inferencia_tipos($1->info.type, $3->info.type));
 	$$ = tree_new(lexem);
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
@@ -514,17 +539,21 @@ precedence_E: precedence_E '-' precedence_F {
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup("-");
+	lexem.type = strdup(inferencia_tipos($1->info.type, $3->info.type));
 	$$ = tree_new(lexem);
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
 
-precedence_F: precedence_G;
+precedence_F: precedence_G{
+	$$ = $1;
+};
 precedence_F: precedence_F '*' precedence_G {
 	lex_val lexem;
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup("*");
+	lexem.type = strdup(inferencia_tipos($1->info.type, $3->info.type));
 	$$ = tree_new(lexem);
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
@@ -534,6 +563,7 @@ precedence_F: precedence_F '/' precedence_G {
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup("/");
+	lexem.type = strdup(inferencia_tipos($1->info.type, $3->info.type));
 	$$ = tree_new(lexem);
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
@@ -543,12 +573,15 @@ precedence_F: precedence_F '%' precedence_G {
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup("%");
+	lexem.type = strdup(inferencia_tipos($1->info.type, $3->info.type));
 	$$ = tree_new(lexem);
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
 
-precedence_G: expr;
+precedence_G: expr{
+	$$ = $1;
+};
 precedence_G: '('precedence_A')' {
 	$$ = $2;
 };
@@ -558,6 +591,7 @@ precedence_G: '-'precedence_G {
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup("-");
+	lexem.type = strdup($2->info.type);
 	$$ = tree_new(lexem);
 	tree_add_child($$, $2);
 };
@@ -567,6 +601,7 @@ precedence_G: '!'precedence_G {
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("operador");
 	lexem.token_value = strdup("!");
+	lexem.type = strdup($2->info.type);
 	$$ = tree_new(lexem);
 	tree_add_child($$, $2);
 };
