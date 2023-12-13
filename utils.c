@@ -462,3 +462,21 @@ void printaPilha(pilha *pilha_atual) {
     }
     printf("\nFIM DE PILHA\n");
 }
+
+char *inferencia_tipos(char *tipo1, char *tipo2){
+	char *retorno;
+	if(strcmp(tipo1, tipo2) == 0){
+		retorno = strdup(tipo1);
+	}
+	else if(strcmp("float", tipo1) || strcmp("float", tipo2)){
+		retorno = strdup("float");
+	}
+	else if(strcmp("int", tipo1) || strcmp("int", tipo2)){
+		retorno = strdup("int");
+	}
+	else{
+		retorno = strdup("bool");
+	}
+	
+	return retorno;
+}

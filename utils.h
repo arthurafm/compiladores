@@ -127,5 +127,6 @@ ht_item* encontrarItemPilha(pilha* pilha_atual, char *key);
 void addItemEscopoOfsset(pilha* pilha_atual, int offset, char *key, int num_line, char *nature, char *type);
 void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, char *type);
 void printaPilha(pilha *pilha_atual);
+char *inferencia_tipos(char *tipo1, char *tipo2);
 
 #endif //_UTILS_H_
