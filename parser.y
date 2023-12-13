@@ -207,7 +207,8 @@ simple_command: type id_list {
 	free(s);
 	$$ = NULL;
 } /* Variable declaration */
-simple_command: id '=' precedence_A { /* QUEBRADA */
+simple_command: id '=' precedence_A {
+	$$ = NULL;
 	lex_val id_info = $1->info;
 	lex_val expr_info = $3->info;
 	ht_item *id_hash_table = encontrarItemPilha(stack, strdup(id_info.token_value));
@@ -216,18 +217,18 @@ simple_command: id '=' precedence_A { /* QUEBRADA */
 		exit(ERR_UNDECLARED);
 	}
 	else {
-		if (strcmp(id_info.type, expr_info.type) != 0) {
+		 if (strcmp(id_hash_table->type, expr_info.type) != 0) {
 			/* Erro -> Variável não é do tipo da expressão */
-		}
-		else {
-			lex_val lexem;
-			lexem.num_line = get_line_number();
-			lexem.token_type = strdup("comando simples");
-			lexem.token_value = strdup("=");
-			$$ = tree_new(lexem);
-			tree_add_child($$, $1);
-			tree_add_child($$, $3);
-		}
+		 }
+	 	else {
+	 		lex_val lexem;
+	 		lexem.num_line = get_line_number();
+	 		lexem.token_type = strdup("comando simples");
+	 		lexem.token_value = strdup("=");
+	 		$$ = tree_new(lexem);
+	 		tree_add_child($$, $1);
+	 		tree_add_child($$, $3);
+	 	}
 	}
 }; /* Attribution */
 simple_command: id'('argument_list')' {
@@ -332,6 +333,7 @@ expr: id {
 	$$ = $1;
 };
 expr: lit {
+	printf("%s tem tipo: %s", $1->info.token_value, $1->info.type);
 	$$ = $1;
 };
 expr: id'('argument_list')' {

@@ -28,6 +28,7 @@ tree_t *tree_new(lex_val info) {
     n->info.num_line = info.num_line;
     n->info.token_type = strdup(info.token_type);
     n->info.token_value = strdup(info.token_value);
+    n->info.type = strdup(info.type);
     n->number_of_children = 0;
     n->children = NULL;
   }
@@ -43,7 +44,8 @@ void tree_free(tree_t *tree) {
     }
     free(tree->children);
     free(tree->info.token_type);
-	  free(tree->info.token_value);
+	free(tree->info.token_value);
+    free(tree->info.type);
     free(tree);
   } else {
     printf("Erro: %s recebeu parâmetro tree = %p.\n", __FUNCTION__, tree);
