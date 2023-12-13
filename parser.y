@@ -154,17 +154,17 @@ command_block: '{' '}' {
 };
 
 open_closure: {
-	printaPilha(stack);
+	//printaPilha(stack);
 	addEscopo(stack);
 };
 
 close_closure: {
-	printaPilha(stack);
+	//printaPilha(stack);
 	excluirEscopo(stack);
 };
 
 open_premature_closure:	{
-	printaPilha(stack);
+	//printaPilha(stack);
 	addEscopo(stack);
 	stack->escopos_ignorar++;
 }
@@ -226,7 +226,7 @@ simple_command: id '=' precedence_A {
 	else {
 		 if (strcmp(id_hash_table->type, expr_info.type) != 0) {
 			 /* Erro -> Variável não é do tipo da expressão */
-			printf("\nvariavel do tipo errado\n");
+			//printf("\nvariavel do tipo errado\n");
 		 }
 	 	else {
 	 		lex_val lexem;
@@ -359,7 +359,7 @@ expr: id {
 	$$ = $1;
 };
 expr: lit {
-	printf("%s tem tipo: %s", $1->info.token_value, $1->info.type);
+	//printf("%s tem tipo: %s", $1->info.token_value, $1->info.type);
 	$$ = $1;
 };
 expr: id'('argument_list')' {
