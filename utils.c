@@ -11,7 +11,7 @@ int get_line_number() {
 }
 
 void yyerror(const char *s) {
-	  printf("In the line %d, the following error occurred: %s", get_line_number(), s);
+	  printf("In the line %d, the following error occurred: %s.\n", get_line_number(), s);
 }
 
 /* --- Árvore Sintática Abstrata --- */
@@ -178,11 +178,9 @@ void ht_insert (hash_table *table, char *key, int num_line, char *nature, char *
     }
     else {
         if (strcmp(cur_item->key, key) == 0) {
-            strcpy(table->items[index]->key, key);
-            table->items[index]->num_line = num_line;
-            strcpy(table->items[index]->nature, nature);
-            strcpy(table->items[index]->type, type);
-            return;
+            /* Erro -> Identificador já foi declarado */
+            printf("The identifier \'%s\', in the line %d, was already declared in line %d.", key, num_line, cur_item->num_line);
+            exit(ERR_DECLARED);
         }
         else {
             handle_collision(table, index, item);

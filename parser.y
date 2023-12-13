@@ -214,6 +214,7 @@ simple_command: id '=' precedence_A {
 	ht_item *id_hash_table = encontrarItemPilha(stack, strdup(id_info.token_value));
 	if (id_hash_table == NULL) {
 		/* Erro -> Variável ainda não declarada */
+		printf("The variable \'%s\', in the line %d, wasn\'t declared.\n", id_info.token_value, id_info.num_line);
 		exit(ERR_UNDECLARED);
 	}
 	else {
@@ -236,6 +237,7 @@ simple_command: id'('argument_list')' {
 	ht_item *id_hash_table = encontrarItemPilha(stack, id_lex.token_value);
 	if (id_hash_table == NULL) {
 		/* Erro -> Função não foi declarada */
+		printf("The function \'%s\', in the line %d, wasn\'t declared.", id_lex.token_value, id_lex.num_line);
 		exit(ERR_UNDECLARED);
 	}
 	else {
@@ -254,6 +256,7 @@ simple_command: id'('argument_list')' {
 		}
 		else {
 			/* Erro -> Identificador não é função */
+			printf("The identifier \'%s\', in the line %d, isn\'t a function.", id_lex.token_value, id_lex.num_line);
 			exit(ERR_VARIABLE);
 		}
 	}
@@ -263,6 +266,7 @@ simple_command: id'('')' {
 	ht_item *id_hash_table = encontrarItemPilha(stack, id_lex.token_value);
 	if (id_hash_table == NULL) {
 		/* Erro -> Função ainda não foi declarada */
+		printf("The function \'%s\', in the line %d, wasn\'t declared.", id_lex.token_value, id_lex.num_line);
 		exit(ERR_UNDECLARED);
 	}
 	else {
@@ -280,6 +284,7 @@ simple_command: id'('')' {
 		}
 		else {
 			/* Erro -> Identificador não é função */
+			printf("The identifier \'%s\', in the line %d, isn\'t a function.", id_lex.token_value, id_lex.num_line);
 			exit(ERR_VARIABLE);
 		}
 	}
@@ -328,6 +333,7 @@ expr: id {
 	ht_item *id_hash_table = encontrarItemPilha(stack, id_lex.token_value);
 	if (id_hash_table == NULL) {
 		/* Erro -> Variável ainda não foi declarada */
+		printf("The variable \'%s\', in the line %d, wasn\'t declared.", id_lex.token_value, id_lex.num_line);
 		exit(ERR_UNDECLARED);
 	}
 	$$ = $1;
@@ -341,6 +347,7 @@ expr: id'('argument_list')' {
 	ht_item *id_hash_table = encontrarItemPilha(stack, id_lex.token_value);
 	if (id_hash_table == NULL) {
 		/* Erro -> Função não foi declarada */
+		printf("The function \'%s\', in the line %d, wasn\'t declared.", id_lex.token_value, id_lex.num_line);
 		exit(ERR_UNDECLARED);
 	}
 	else {
@@ -359,6 +366,7 @@ expr: id'('argument_list')' {
 		}
 		else {
 			/* Erro -> Identificador não é função */
+			printf("The identifier \'%s\', in the line %d, isn\'t a function.", id_lex.token_value, id_lex.num_line);
 			exit(ERR_VARIABLE);
 		}
 	}
@@ -368,6 +376,7 @@ expr: id'('')' {
 	ht_item *id_hash_table = encontrarItemPilha(stack, id_lex.token_value);
 	if (id_hash_table == NULL) {
 		/* Erro -> Função não foi declarada */
+		printf("The function \'%s\', in the line %d, wasn\'t declared.", id_lex.token_value, id_lex.num_line);
 		exit(ERR_UNDECLARED);
 	}
 	else {
@@ -385,6 +394,7 @@ expr: id'('')' {
 		}
 		else {
 			/* Erro -> Identificador não é função */
+			printf("The identifier \'%s\', in the line %d, isn\'t a function.", id_lex.token_value, id_lex.num_line);
 			exit(ERR_VARIABLE);
 		}
 	}

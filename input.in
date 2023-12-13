@@ -1,4 +1,4 @@
 (int x) >= int! funcao {
     int a;
-    a();
+    a = b;  
 }
