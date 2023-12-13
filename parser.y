@@ -53,6 +53,7 @@
 %type<tree> function
 %type<tree> function_header
 %type<tree> function_body
+%type<tree> command_block
 %type<tree> simple_command_list
 %type<tree> simple_command
 %type<tree> expr
@@ -145,6 +146,13 @@ function_body: open_closure '{' '}' close_closure {
 	$$ = NULL;
 };
 
+command_block: '{' simple_command_list '}' {
+	$$ = $2;
+};
+command_block: '{' '}' {
+	$$ = NULL;
+};
+
 open_closure: {
 	printaPilha(stack);
 	addEscopo(stack);
@@ -199,45 +207,55 @@ simple_command: type id_list {
 	free(s);
 	$$ = NULL;
 } /* Variable declaration */
-simple_command: id '=' precedence_A {
-	lex_val id_info = $1->info, expr_info = $3->info;
-	if (encontrarItemPilha(stack, id_info.token_value) == NULL) {
+simple_command: id '=' precedence_A { /* QUEBRADA */
+	lex_val id_info = $1->info;
+	lex_val expr_info = $3->info;
+	ht_item *id_hash_table = encontrarItemPilha(stack, strdup(id_info.token_value));
+	if (id_hash_table == NULL) {
 		/* Erro -> Variável ainda não declarada */
 		exit(ERR_UNDECLARED);
 	}
-	else if (strcmp(id_info.type, expr_info.type) != 0) {
-		/* Erro -> Variável não é do tipo da expressão */
-	}
 	else {
-		lex_val lexem;
-		lexem.num_line = get_line_number();
-		lexem.token_type = strdup("comando simples");
-		lexem.token_value = strdup("=");
-		$$ = tree_new(lexem);
-		tree_add_child($$, $1);
-		tree_add_child($$, $3);
+		if (strcmp(id_info.type, expr_info.type) != 0) {
+			/* Erro -> Variável não é do tipo da expressão */
+		}
+		else {
+			lex_val lexem;
+			lexem.num_line = get_line_number();
+			lexem.token_type = strdup("comando simples");
+			lexem.token_value = strdup("=");
+			$$ = tree_new(lexem);
+			tree_add_child($$, $1);
+			tree_add_child($$, $3);
+		}
 	}
 }; /* Attribution */
 simple_command: id'('argument_list')' {
 	lex_val id_lex = $1->info;
 	ht_item *id_hash_table = encontrarItemPilha(stack, id_lex.token_value);
-	if (strcmp(strdup("function"), id_hash_table->nature) == 0) {
-		int str_len = strlen(id_lex.token_value) + 7;
-		char *tkn_value = malloc(sizeof(char) * str_len);
-		strcpy(tkn_value, "call ");
-		strcat(tkn_value, id_lex.token_value);
-		lex_val lexem;
-		lexem.num_line = get_line_number();
-		lexem.token_type = strdup("comando simples");
-		lexem.token_value = strdup(tkn_value);
-		$$ = tree_new(lexem);
-		free(tkn_value);
-		tree_add_child($$, $3);
+	if (id_hash_table == NULL) {
+		/* Erro -> Função não foi declarada */
+		exit(ERR_UNDECLARED);
 	}
 	else {
-		/* Erro -> Identificador não é função */
+		if (strcmp(strdup("function"), id_hash_table->nature) == 0) {
+			int str_len = strlen(id_lex.token_value) + 7;
+			char *tkn_value = malloc(sizeof(char) * str_len);
+			strcpy(tkn_value, "call ");
+			strcat(tkn_value, id_lex.token_value);
+			lex_val lexem;
+			lexem.num_line = get_line_number();
+			lexem.token_type = strdup("comando simples");
+			lexem.token_value = strdup(tkn_value);
+			$$ = tree_new(lexem);
+			free(tkn_value);
+			tree_add_child($$, $3);
+		}
+		else {
+			/* Erro -> Identificador não é função */
+			exit(ERR_VARIABLE);
+		}
 	}
-	
 }; /* Function call */
 simple_command: id'('')' {
 	lex_val id_lex = $1->info;
@@ -270,10 +288,11 @@ simple_command: TK_PR_RETURN precedence_A {
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("comando simples");
 	lexem.token_value = strdup("return");
+	lexem.token_value = strdup($2->info.type);
 	$$ = tree_new(lexem);
 	tree_add_child($$, $2);
 }; /* Return command */
-simple_command: TK_PR_IF '(' precedence_A ')' function_body {
+simple_command: TK_PR_IF '(' precedence_A ')' command_block {
 	lex_val lexem;
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("comando simples");
@@ -282,7 +301,7 @@ simple_command: TK_PR_IF '(' precedence_A ')' function_body {
 	tree_add_child($$, $3);
 	tree_add_child($$, $5);
 }; /* Flow Control */
-simple_command: TK_PR_IF '(' precedence_A ')' function_body TK_PR_ELSE function_body {
+simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_block {
 	lex_val lexem;
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("comando simples");
@@ -292,7 +311,7 @@ simple_command: TK_PR_IF '(' precedence_A ')' function_body TK_PR_ELSE function_
 	tree_add_child($$, $5);
 	tree_add_child($$, $7);
 }; /* Flow Control */
-simple_command: TK_PR_WHILE '(' precedence_A ')' function_body {
+simple_command: TK_PR_WHILE '(' precedence_A ')' command_block {
 	lex_val lexem;
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("comando simples");
@@ -312,44 +331,56 @@ expr: lit {
 expr: id'('argument_list')' {
 	lex_val id_lex = $1->info;
 	ht_item *id_hash_table = encontrarItemPilha(stack, id_lex.token_value);
-	if (strcmp(strdup("function"), id_hash_table->nature) == 0) {
-		int str_len = strlen(id_lex.token_value) + 7;
-		char *tkn_value = malloc(sizeof(char) * str_len);
-		strcpy(tkn_value, "call ");
-		strcat(tkn_value, id_lex.token_value);
-		lex_val lexem;
-		lexem.num_line = get_line_number();
-		lexem.token_type = strdup("comando simples");
-		lexem.token_value = strdup(tkn_value);
-		$$ = tree_new(lexem);
-		free(tkn_value);
-		tree_add_child($$, $3);
+	if (id_hash_table == NULL) {
+		/* Erro -> Função não foi declarada */
+		exit(ERR_UNDECLARED);
 	}
 	else {
-		/* Erro -> Identificador não é função */
-		exit(ERR_VARIABLE);
+		if (strcmp(strdup("function"), id_hash_table->nature) == 0) {
+			int str_len = strlen(id_lex.token_value) + 7;
+			char *tkn_value = malloc(sizeof(char) * str_len);
+			strcpy(tkn_value, "call ");
+			strcat(tkn_value, id_lex.token_value);
+			lex_val lexem;
+			lexem.num_line = get_line_number();
+			lexem.token_type = strdup("comando simples");
+			lexem.token_value = strdup(tkn_value);
+			$$ = tree_new(lexem);
+			free(tkn_value);
+			tree_add_child($$, $3);
+		}
+		else {
+			/* Erro -> Identificador não é função */
+			exit(ERR_VARIABLE);
+		}
 	}
-	
 };
 expr: id'('')' {
 	lex_val id_lex = $1->info;
 	ht_item *id_hash_table = encontrarItemPilha(stack, id_lex.token_value);
-	if (strcmp(strdup("function"), id_hash_table->nature) == 0) {
-		int str_len = strlen(id_lex.token_value) + 7;
-		char *tkn_value = malloc(sizeof(char) * str_len);
-		strcpy(tkn_value, "call ");
-		strcat(tkn_value, id_lex.token_value);
-		lex_val lexem;
-		lexem.num_line = get_line_number();
-		lexem.token_type = strdup("comando simples");
-		lexem.token_value = strdup(tkn_value);
-		$$ = tree_new(lexem);
-		free(tkn_value);
+	if (id_hash_table == NULL) {
+		/* Erro -> Função não foi declarada */
+		exit(ERR_UNDECLARED);
 	}
 	else {
-		/* Erro -> Identificador não é função */
-		exit(ERR_VARIABLE);
+		if (strcmp(strdup("function"), id_hash_table->nature) == 0) {
+			int str_len = strlen(id_lex.token_value) + 7;
+			char *tkn_value = malloc(sizeof(char) * str_len);
+			strcpy(tkn_value, "call ");
+			strcat(tkn_value, id_lex.token_value);
+			lex_val lexem;
+			lexem.num_line = get_line_number();
+			lexem.token_type = strdup("comando simples");
+			lexem.token_value = strdup(tkn_value);
+			$$ = tree_new(lexem);
+			free(tkn_value);
+		}
+		else {
+			/* Erro -> Identificador não é função */
+			exit(ERR_VARIABLE);
+		}
 	}
+	
 };
 
 precedence_A: precedence_B;
@@ -487,32 +518,21 @@ precedence_G: '('precedence_A')' {
 };
 precedence_G: '-'precedence_G {
 	lex_val expr_info = $2->info;
-	if ((strcmp(expr_info.type, "int") == 0) || (strcmp(expr_info.type, "float") == 0)) {
-		lex_val lexem;
-		lexem.num_line = get_line_number();
-		lexem.token_type = strdup("operador");
-		lexem.token_value = strdup("-");
-		$$ = tree_new(lexem);
-		tree_add_child($$, $2);
-	}
-	else {
-		/* Erro -> Expressão não é inteira ou flutuante */
-	}
+	lex_val lexem;
+	lexem.num_line = get_line_number();
+	lexem.token_type = strdup("operador");
+	lexem.token_value = strdup("-");
+	$$ = tree_new(lexem);
+	tree_add_child($$, $2);
 };
 precedence_G: '!'precedence_G {
 	lex_val expr_info = $2->info;
-	if (strcmp(expr_info.type, "bool") == 0) {
-		lex_val lexem;
-		lexem.num_line = get_line_number();
-		lexem.token_type = strdup("operador");
-		lexem.token_value = strdup("!");
-		$$ = tree_new(lexem);
-		tree_add_child($$, $2);
-	}
-	else {
-		/* Erro -> Expressão não é booleana */
-	}
-	
+	lex_val lexem;
+	lexem.num_line = get_line_number();
+	lexem.token_type = strdup("operador");
+	lexem.token_value = strdup("!");
+	$$ = tree_new(lexem);
+	tree_add_child($$, $2);
 };
 
 
