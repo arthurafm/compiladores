@@ -382,16 +382,22 @@ void ht_delete(hash_table *table, char *key) {
 pilha *criarPilha(){
     pilha *nova_pilha = (pilha *) malloc(sizeof(pilha));
     nova_pilha->num_escopos = 0;
+    nova_pilha->escopos_ignorar = 0;
     nova_pilha->escopos = NULL;
     addEscopo(nova_pilha);
     return nova_pilha;
 }
 
 void addEscopo(pilha* pilha_atual){
-	pilha_atual->num_escopos++;
-	pilha_atual->escopos = realloc(pilha_atual->escopos, pilha_atual->num_escopos * sizeof(hash_table*));
-	hash_table *temp = create_table(SIZE_TABLE);
-	pilha_atual->escopos[pilha_atual->num_escopos - 1] = temp;
+	if(pilha_atual->escopos_ignorar == 0){
+		pilha_atual->num_escopos++;
+		pilha_atual->escopos = realloc(pilha_atual->escopos, pilha_atual->num_escopos * sizeof(hash_table*));
+		hash_table *temp = create_table(SIZE_TABLE);
+		pilha_atual->escopos[pilha_atual->num_escopos - 1] = temp;
+	}
+	else{
+		pilha_atual->escopos_ignorar--;
+	}
 }
 
 void excluirEscopo(pilha* pilha_atual){
@@ -416,16 +422,22 @@ ht_item* encontrarItemPilha(pilha* pilha_atual, char *key){
 	return NULL;
 }
 
+void addItemEscopoOfsset(pilha* pilha_atual, int offset, char *key, int num_line, char *nature, char *type){
+	if(pilha_atual->num_escopos - 1 - offset >= 0){
+		hash_table *hash_table_atual;
+		hash_table_atual = pilha_atual->escopos[pilha_atual->num_escopos - 1 - offset];
+		ht_item *item_atual = encontrarItemPilha(pilha_atual, key);
+		if (item_atual != NULL) {
+		    /* Erro -> Identificador já foi declarado */
+		    printf("The identifier \'%s\', in the line %d, was already declared in line %d.", key, num_line, item_atual->num_line);
+		    exit(ERR_DECLARED);
+		}
+		ht_insert(hash_table_atual, key, num_line, nature, type);
+	}
+}
+
 void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, char *type){
-	hash_table *hash_table_atual;
-	hash_table_atual = pilha_atual->escopos[pilha_atual->num_escopos - 1];
-    ht_item *item_atual = encontrarItemPilha(pilha_atual, key);
-    if (item_atual != NULL) {
-        /* Erro -> Identificador já foi declarado */
-        printf("The identifier \'%s\', in the line %d, was already declared in line %d.", key, num_line, item_atual->num_line);
-        exit(ERR_DECLARED);
-    }
-	ht_insert(hash_table_atual, key, num_line, nature, type);
+	addItemEscopoOfsset(pilha_atual, 0, key, num_line, nature, type);
 }
 
 void print_table (hash_table *table) {

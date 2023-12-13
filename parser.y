@@ -130,12 +130,12 @@ function: function_header function_body {
 	tree_add_child($$, $2);
 };
 
-function_header: param_list_parenthesis TK_OC_GE type'!' id {
-	lex_val id_info = $5->info;
-	char *id_type = strdup($3.type);
-	$5->info.type = strdup(id_type);
-	addItemEscopo(stack, id_info.token_value, id_info.num_line, strdup("function"), strdup(id_type));
-	$$ = $5;
+function_header: open_premature_closure param_list_parenthesis TK_OC_GE type'!' id {
+	lex_val id_info = $6->info;
+	char *id_type = strdup($4.type);
+	$6->info.type = strdup(id_type);
+	addItemEscopoOfsset(stack, 1, id_info.token_value, id_info.num_line, strdup("function"), strdup(id_type));
+	$$ = $6;
 	free(id_type);
 };
 
@@ -162,6 +162,12 @@ close_closure: {
 	printaPilha(stack);
 	excluirEscopo(stack);
 };
+
+open_premature_closure:	{
+	printaPilha(stack);
+	addEscopo(stack);
+	stack->escopos_ignorar++;
+}
 
 /* Simple Commands */
 simple_command_list: simple_command';' {

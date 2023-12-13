@@ -47,6 +47,7 @@ typedef struct hashtable {
 typedef struct pilha_t{
 	hash_table** escopos;
 	int num_escopos;
+	int escopos_ignorar;
 } pilha;
 
 /* Retorna o número da linha atual do código-fonte */
@@ -123,6 +124,7 @@ pilha *criarPilha();
 void addEscopo(pilha* pilha_atual);
 void excluirEscopo(pilha* pilha_atual);
 ht_item* encontrarItemPilha(pilha* pilha_atual, char *key);
+void addItemEscopoOfsset(pilha* pilha_atual, int offset, char *key, int num_line, char *nature, char *type);
 void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, char *type);
 void printaPilha(pilha *pilha_atual);
 
