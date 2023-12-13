@@ -294,7 +294,7 @@ simple_command: TK_PR_RETURN precedence_A {
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("comando simples");
 	lexem.token_value = strdup("return");
-	lexem.token_value = strdup($2->info.type);
+	lexem.type = strdup($2->info.type);
 	$$ = tree_new(lexem);
 	tree_add_child($$, $2);
 }; /* Return command */
@@ -303,6 +303,7 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block {
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("comando simples");
 	lexem.token_value = strdup("if");
+	lexem.type = strdup($3->info.type);
 	$$ = tree_new(lexem);
 	tree_add_child($$, $3);
 	tree_add_child($$, $5);
@@ -312,6 +313,7 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_b
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("comando simples");
 	lexem.token_value = strdup("if");
+	lexem.type = strdup($3->info.type);
 	$$ = tree_new(lexem);
 	tree_add_child($$, $3);
 	tree_add_child($$, $5);
@@ -322,6 +324,7 @@ simple_command: TK_PR_WHILE '(' precedence_A ')' command_block {
 	lexem.num_line = get_line_number();
 	lexem.token_type = strdup("comando simples");
 	lexem.token_value = strdup("while");
+	lexem.type = strdup($3->info.type);
 	$$ = tree_new(lexem);
 	tree_add_child($$, $3);
 	tree_add_child($$, $5);
@@ -367,6 +370,7 @@ expr: id'('argument_list')' {
 			lexem.num_line = get_line_number();
 			lexem.token_type = strdup("comando simples");
 			lexem.token_value = strdup(tkn_value);
+			lexem.type = strdup(id_lex.type);
 			$$ = tree_new(lexem);
 			free(tkn_value);
 			tree_add_child($$, $3);
@@ -396,6 +400,7 @@ expr: id'('')' {
 			lexem.num_line = get_line_number();
 			lexem.token_type = strdup("comando simples");
 			lexem.token_value = strdup(tkn_value);
+			lexem.type = strdup(id_lex.type);
 			$$ = tree_new(lexem);
 			free(tkn_value);
 		}
