@@ -336,6 +336,13 @@ expr: id {
 		printf("The variable \'%s\', in the line %d, wasn\'t declared.", id_lex.token_value, id_lex.num_line);
 		exit(ERR_UNDECLARED);
 	}
+	else {
+		if (strcmp(id_hash_table->nature, strdup("function")) == 0) {
+			/* Erro -> Identificador é função */
+			printf("The identifier \'%s\', in the line %d, is a function.", id_lex.token_value, id_lex.num_line);
+			exit(ERR_FUNCTION);
+		}
+	}
 	$$ = $1;
 };
 expr: lit {
