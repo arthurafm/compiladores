@@ -116,10 +116,14 @@ void handle_collision (hash_table *table, unsigned long index, ht_item *item);
 /* Deleta de uma hash table */
 void ht_delete (hash_table *table, char *key);
 
+/* Printa uma hash table */
+void print_table (hash_table *table);
+
 pilha *criarPilha();
 void addEscopo(pilha* pilha_atual);
 void excluirEscopo(pilha* pilha_atual);
 ht_item* encontrarItemPilha(pilha* pilha_atual, char *key);
 void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, char *type);
+void printaPilha(pilha *pilha_atual);
 
 #endif //_UTILS_H_

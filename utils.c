@@ -421,3 +421,26 @@ void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, ch
 	hash_table_atual = pilha_atual->escopos[pilha_atual->num_escopos - 1];
 	ht_insert(hash_table_atual, key, num_line, nature, type);
 }
+
+void print_table (hash_table *table) {
+     printf("\nHash Table\n-------------------\n");
+    for (int i = 0; i < table->size; i++)
+    {
+        if (table->items[i] != NULL)
+        {
+            printf("Chave: %s, Num_line: %d, Natureza: %s, Tipo: %s\n", table->items[i]->key, table->items[i]->num_line, table->items[i]->nature, table->items[i]->type);
+        }
+    }
+    printf("-------------------\n\n");
+}
+
+void printaPilha(pilha *pilha_atual) {
+    int count_closure = 1;
+    printf("\nINICIO DE PILHA\n");
+    for (int i = 0; i < pilha_atual->num_escopos; i++) {
+        printf("ESCOPO (%d):\n", count_closure);
+        print_table(pilha_atual->escopos[i]);
+        count_closure++;
+    }
+    printf("\nFIM DE PILHA\n");
+}

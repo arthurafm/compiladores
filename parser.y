@@ -4,6 +4,8 @@
 	/* Emanuel Pacheco Thiel -  00170313 */
 	
 	#include <string.h>
+	#include <stdlib.h>
+	#include <stdio.h>
 	#include "utils.h"
 
 	int yylex(void);
@@ -12,7 +14,6 @@
 	extern pilha *stack;
 
 	/* Problemas atuais: */
-	/* Retorno de erro */
 	/* Operações tem tipos específicos? */
 %}
 
@@ -64,6 +65,7 @@
 %type<tree> precedence_G
 %type<tree> lit
 %type<tree> id
+%type<tree> param
 %type<tree> argument_list
 %type<valor_lexico> type
 %type<list> id_list
@@ -113,6 +115,7 @@ var: type id_list';' {
 
 	while (token != NULL) {
 		addItemEscopo(stack, token, get_line_number(), strdup("variable"), strdup(type));
+		token = strtok(NULL, s);
 	}
 
 	free(list);
@@ -143,10 +146,12 @@ function_body: open_closure '{' '}' close_closure {
 };
 
 open_closure: {
+	printaPilha(stack);
 	addEscopo(stack);
 };
 
 close_closure: {
+	printaPilha(stack);
 	excluirEscopo(stack);
 };
 
@@ -186,6 +191,7 @@ simple_command: type id_list {
 
 	while (token != NULL) {
 		addItemEscopo(stack, token, get_line_number(), strdup("variable"), strdup(type));
+		token = strtok(NULL, s);
 	}
 
 	free(list);
@@ -197,7 +203,7 @@ simple_command: id '=' precedence_A {
 	lex_val id_info = $1->info, expr_info = $3->info;
 	if (encontrarItemPilha(stack, id_info.token_value) == NULL) {
 		/* Erro -> Variável ainda não declarada */
-		return ERR_UNDECLARED;
+		exit(ERR_UNDECLARED);
 	}
 	else if (strcmp(id_info.type, expr_info.type) != 0) {
 		/* Erro -> Variável não é do tipo da expressão */
@@ -236,22 +242,28 @@ simple_command: id'('argument_list')' {
 simple_command: id'('')' {
 	lex_val id_lex = $1->info;
 	ht_item *id_hash_table = encontrarItemPilha(stack, id_lex.token_value);
-	if (strcmp(strdup("function"), id_hash_table->nature) == 0) {
-		int str_len = strlen(id_lex.token_value) + 7;
-		char *tkn_value = malloc(sizeof(char) * str_len);
-		strcpy(tkn_value, "call ");
-		strcat(tkn_value, id_lex.token_value);
-		lex_val lexem;
-		lexem.num_line = get_line_number();
-		lexem.token_type = strdup("comando simples");
-		lexem.token_value = strdup(tkn_value);
-		$$ = tree_new(lexem);
-		free(tkn_value);
+	if (id_hash_table == NULL) {
+		/* Erro -> Função ainda não foi declarada */
+		exit(ERR_UNDECLARED);
 	}
 	else {
-		/* Erro -> Identificador não é função */
+		if (strcmp(strdup("function"), id_hash_table->nature) == 0) {
+			int str_len = strlen(id_lex.token_value) + 7;
+			char *tkn_value = malloc(sizeof(char) * str_len);
+			strcpy(tkn_value, "call ");
+			strcat(tkn_value, id_lex.token_value);
+			lex_val lexem;
+			lexem.num_line = get_line_number();
+			lexem.token_type = strdup("comando simples");
+			lexem.token_value = strdup(tkn_value);
+			$$ = tree_new(lexem);
+			free(tkn_value);
+		}
+		else {
+			/* Erro -> Identificador não é função */
+			exit(ERR_VARIABLE);
+		}
 	}
-	
 }; /* Function call */
 simple_command: TK_PR_RETURN precedence_A {
 	lex_val lexem;
@@ -315,7 +327,7 @@ expr: id'('argument_list')' {
 	}
 	else {
 		/* Erro -> Identificador não é função */
-		return ERR_VARIABLE;
+		exit(ERR_VARIABLE);
 	}
 	
 };
@@ -336,7 +348,7 @@ expr: id'('')' {
 	}
 	else {
 		/* Erro -> Identificador não é função */
-		return ERR_VARIABLE;
+		exit(ERR_VARIABLE);
 	}
 };
 
@@ -552,6 +564,8 @@ id_list: id',' id_list {
 	strcat(new_list, strdup(","));
 	strcat(new_list, $3);
 
+	$$ = strdup(new_list);
+
 	free(new_list);
 	free(id_name);
 };
@@ -577,7 +591,15 @@ param_list_parenthesis: '(' param_list ')';
 param_list: param;
 param_list: param ',' param_list;
 
-param: type id;
+param: type id {
+	char *id = $2->info.token_value;
+	char *type = $1.type;
+	addItemEscopo(stack, strdup(id), get_line_number(), strdup("variable"), strdup(type));
+
+	free(id);
+	free(type);
+	$$ = NULL;
+};
 
 /* Arguments */
 argument_list: precedence_A {
