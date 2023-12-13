@@ -419,6 +419,12 @@ ht_item* encontrarItemPilha(pilha* pilha_atual, char *key){
 void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, char *type){
 	hash_table *hash_table_atual;
 	hash_table_atual = pilha_atual->escopos[pilha_atual->num_escopos - 1];
+    ht_item *item_atual = encontrarItemPilha(pilha_atual, key);
+    if (item_atual != NULL) {
+        /* Erro -> Identificador já foi declarado */
+        printf("The identifier \'%s\', in the line %d, was already declared in line %d.", key, num_line, item_atual->num_line);
+        exit(ERR_DECLARED);
+    }
 	ht_insert(hash_table_atual, key, num_line, nature, type);
 }
 
