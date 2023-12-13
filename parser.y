@@ -323,6 +323,12 @@ simple_command: TK_PR_WHILE '(' precedence_A ')' command_block {
 
 /* Expressions */
 expr: id {
+	lex_val id_lex = $1->info;
+	ht_item *id_hash_table = encontrarItemPilha(stack, id_lex.token_value);
+	if (id_hash_table == NULL) {
+		/* Erro -> Variável ainda não foi declarada */
+		exit(ERR_UNDECLARED);
+	}
 	$$ = $1;
 };
 expr: lit {
