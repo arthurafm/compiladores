@@ -1,6 +1,6 @@
-(int x) >= int! funcao {
-    int a;
-    {
-        int a;
-    };
+//ERR_FUNCTION
+() >= int ! g { return 0; }
+() >= int ! f {
+    g = 2;
+    return 0;
 }

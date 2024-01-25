@@ -154,17 +154,17 @@ command_block: '{' '}' {
 };
 
 open_closure: {
-	//printaPilha(stack);
+	// printaPilha(stack);
 	addEscopo(stack);
 };
 
 close_closure: {
-	//printaPilha(stack);
+	// printaPilha(stack);
 	excluirEscopo(stack);
 };
 
 open_premature_closure:	{
-	//printaPilha(stack);
+	// printaPilha(stack);
 	addEscopo(stack);
 	stack->escopos_ignorar++;
 }
@@ -229,6 +229,10 @@ simple_command: id '=' precedence_A {
 			//printf("\nvariavel do tipo errado\n");
 		 }
 	 	else {
+			if (strcmp(id_hash_table->nature, strdup("function")) == 0 ) {
+				printf("The identifier \'%s\', in the line %d, is a function, not a variable.", id_info.token_value, id_info.num_line);
+				exit(ERR_FUNCTION);
+			}
 	 		lex_val lexem;
 	 		lexem.num_line = get_line_number();
 	 		lexem.token_type = strdup("comando simples");
