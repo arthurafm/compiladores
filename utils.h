@@ -50,6 +50,20 @@ typedef struct pilha_t{
 	int escopos_ignorar;
 } pilha;
 
+/* --- Estrutura da ILOC --- */
+typedef struct iloc_operation {
+    char *operation;
+    char *input_1;
+    char *input_2;
+    char *output_1;
+    char *output_2;
+} iloc_op;
+
+typedef struct iloc_program {
+    iloc_op *operation;
+    struct iloc_program *next_op;
+} iloc_prog;
+
 /* Retorna o número da linha atual do código-fonte */
 int get_line_number();
 
