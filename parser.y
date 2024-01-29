@@ -154,17 +154,17 @@ command_block: '{' '}' {
 };
 
 open_closure: {
-	printaPilha(stack);
+	// printaPilha(stack);
 	addEscopo(stack);
 };
 
 close_closure: {
-	printaPilha(stack);
+	// printaPilha(stack);
 	excluirEscopo(stack);
 };
 
 open_premature_closure:	{
-	printaPilha(stack);
+	// printaPilha(stack);
 	addEscopo(stack);
 	stack->escopos_ignorar++;
 }
