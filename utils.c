@@ -480,3 +480,48 @@ char *inferencia_tipos(char *tipo1, char *tipo2){
 	
 	return retorno;
 }
+
+void printILOC (iloc_prog *prog) {
+    while (prog != NULL) {
+        if (prog->operation != NULL) {
+            if (prog->operation->label != NULL) {
+                printf("%s: ", prog->operation->label);
+            }
+            printf("%s", prog->operation->operation);
+            if (prog->operation->input_1 != NULL) {
+                printf(" %s", prog->operation->input_1);
+            }
+            if (prog->operation->input_2 != NULL) {
+                printf(", %s", prog->operation->input_2);
+            }
+            if (prog->operation->output_1 != NULL) {
+                if (prog->operation->control_flux == 0) { // Se não for uma operação de controle de fluxo
+                    printf("=> %s", prog->operation->output_1);
+                }
+                else { // Se for uma operação de controle de fluxo
+                    printf("-> %s", prog->operation->output_1);
+                }
+            }
+            if (prog->operation->output_2 != NULL) {
+                printf(", %s", prog->operation->output_2);
+            }
+            printf("\n");
+        }
+        prog = prog->next_op;
+    }
+}
+
+void createLabel (char *label, int *counter) {
+    char *counterString;
+    sprintf(counterString, "L%d", label, *counter);
+    label = strdup(counterString);
+    *counter += 1;
+}
+
+void createRegister (char *register, int *counter) {
+    char *counterString;
+    sprintf(counterString, "r%d", register, *counter);
+    register = strdup(counterString);
+    *counter += 1;
+}
+

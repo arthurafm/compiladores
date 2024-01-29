@@ -52,11 +52,13 @@ typedef struct pilha_t{
 
 /* --- Estrutura da ILOC --- */
 typedef struct iloc_operation {
+    char *label; // Rótulo para desvio de fluxo, caso exista
     char *operation;
     char *input_1;
     char *input_2;
     char *output_1;
     char *output_2;
+    short control_flux; // Variável booleana saber se é uma operação de fluxo de controle, 0 = não, 1 = sim
 } iloc_op;
 
 typedef struct iloc_program {
@@ -142,5 +144,14 @@ void addItemEscopoOfsset(pilha* pilha_atual, int offset, char *key, int num_line
 void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, char *type);
 void printaPilha(pilha *pilha_atual);
 char *inferencia_tipos(char *tipo1, char *tipo2);
+
+/* Printa programa ILOC */
+void printILOC (iloc_prog *prog);
+
+/* Fornece nomes de rótulos a serem utilizados na geração de código */
+void createLabel (char *label, int *counter);
+
+/* Fornece nomes de registradores temporários a serem utilizados na geração de código */
+void createRegister (char *register, int *counter);
 
 #endif //_UTILS_H_
