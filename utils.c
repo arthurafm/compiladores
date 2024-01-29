@@ -513,14 +513,14 @@ void printILOC (iloc_prog *prog) {
 
 void createLabel (char *label, int *counter) {
     char *counterString;
-    sprintf(counterString, "L%d", label, *counter);
+    sprintf(counterString, "L%s%d", label, *counter);
     label = strdup(counterString);
     *counter += 1;
 }
 
 void createRegister (char *r, int *counter) {
     char *counterString;
-    sprintf(counterString, "r%d", r, *counter);
+    sprintf(counterString, "r%s%d", r, *counter);
     r = strdup(counterString);
     *counter += 1;
 }
