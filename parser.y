@@ -136,6 +136,12 @@ function_header: open_premature_closure param_list_parenthesis TK_OC_GE type'!' 
 	$6->info.type = strdup(id_type);
 	addItemEscopoOfsset(stack, 1, id_info.token_value, id_info.num_line, strdup("function"), strdup(id_type));
 	$$ = $6;
+	if(strcmp(id_info.token_value, "main") == 0){
+		printf("era a main");
+	}
+	else{
+		printf("nao era a main");
+	}
 	free(id_type);
 };
 
