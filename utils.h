@@ -30,6 +30,7 @@ typedef struct hash_table_item {
     int num_line;
     char *nature;
     char *type;
+    int offset;
 } ht_item;
 
 typedef struct linkedlist {
@@ -149,9 +150,16 @@ char *inferencia_tipos(char *tipo1, char *tipo2);
 void printILOC (iloc_prog *prog);
 
 /* Fornece nomes de rótulos a serem utilizados na geração de código */
-void createLabel (char *label, int *counter);
+char* createLabel (int *counter);
 
 /* Fornece nomes de registradores temporários a serem utilizados na geração de código */
-void createRegister (char *r, int *counter);
+char* createRegister (int *counter);
+
+/* Concatena programas ILOC */
+void concatILOCProg (iloc_prog *prog, iloc_op *op);
+
+/* Checa contexto do identificador, se é global ou local; 0 = global, 1 = local, 2 = não encontrou */
+short checkContext (pilha* pilha_atual, char *key);
+
 
 #endif //_UTILS_H_

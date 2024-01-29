@@ -175,6 +175,7 @@ void ht_insert (hash_table *table, char *key, int num_line, char *nature, char *
 
         table->items[index] = item;
         table->count++;
+        item->offset = table->count;
     }
     else {
         if (strcmp(cur_item->key, key) == 0) {
@@ -511,17 +512,45 @@ void printILOC (iloc_prog *prog) {
     }
 }
 
-void createLabel (char *label, int *counter) {
+char* createLabel (int *counter) {
     char *counterString;
-    sprintf(counterString, "L%s%d", label, *counter);
-    label = strdup(counterString);
+    sprintf(counterString, "L%d", *counter);
     *counter += 1;
+    return strdup(counterString);
 }
 
-void createRegister (char *r, int *counter) {
+char* createRegister (int *counter) {
     char *counterString;
-    sprintf(counterString, "r%s%d", r, *counter);
-    r = strdup(counterString);
+    sprintf(counterString, "r%d", *counter);
     *counter += 1;
+    return strdup(counterString);
 }
 
+void concatILOCProg (iloc_prog *prog, iloc_op *op) {
+    iloc_prog *cursor = prog;
+    while (cursor->next_op != NULL) {
+        cursor = cursor->next_op;
+    }
+    struct iloc_program *new_op;
+    new_op->operation = op;
+    new_op->next_op = NULL;
+    cursor->next_op = new_op;
+}
+
+short checkContext (pilha* pilha_atual, char *key) {
+    int contador = pilha_atual->num_escopos;
+	hash_table *hash_table_atual;
+	while(contador >= 1){
+		hash_table_atual = pilha_atual->escopos[contador - 1];
+		if(ht_search(hash_table_atual, key) != NULL){
+			if (contador == pilha_atual->num_escopos) {
+                return 0;
+            }
+            else {
+                return 1;
+            }
+		}
+		contador--;
+	}
+    return 2;
+}

@@ -12,6 +12,9 @@
 	void yyerror(char const *mensagem);
 
 	extern pilha *stack;
+	extern iloc_prog *prog;
+	extern int labelCounter;
+	extern int registerCounter;
 
 	/* Problemas atuais: */
 	/* Operações tem tipos específicos? */
@@ -137,10 +140,10 @@ function_header: open_premature_closure param_list_parenthesis TK_OC_GE type'!' 
 	addItemEscopoOfsset(stack, 1, id_info.token_value, id_info.num_line, strdup("function"), strdup(id_type));
 	$$ = $6;
 	if(strcmp(id_info.token_value, "main") == 0){
-		printf("era a main");
+		printf("era a main\n");
 	}
 	else{
-		printf("nao era a main");
+		printf("nao era a main\n");
 	}
 	free(id_type);
 };
@@ -239,6 +242,35 @@ simple_command: id '=' precedence_A {
 		lexem.token_type = strdup("comando simples");
 		lexem.token_value = strdup("=");
 		lexem.type = strdup(id_hash_table->type);
+		if (strcmp(expr_info.token_type, strdup("literal")) == 0) { // Se for um literal que está sendo atribuído
+			iloc_op op_load;
+			op_load.operation = strdup("loadI");
+			op_load.input_1 = strdup(expr_info.token_value);
+			op_load.input_2 = NULL;
+			op_load.output_1 = createRegister(&registerCounter); // Não está funcionando
+			op_load.output_2 = NULL;
+			op_load.control_flux = 0;
+			printf("%s %s => %s\n", op_load.operation, op_load.input_1, op_load.output_1);
+			concatILOCProg(prog, &op_load);
+			iloc_op op_store;
+			op_store.operation = strdup("storeAI");
+			op_store.input_1 = strdup(op_load.output_1);
+			op_store.input_2 = NULL;
+			// Se for uma variável global
+			if (checkContext (stack, strdup(id_info.token_value)) == 0) {
+				op_store.output_1 = strdup("rbss");
+			}
+			// Se for local
+			else if (checkContext (stack, strdup(id_info.token_value)) == 1) {
+				op_store.output_1 = strdup("rfp");
+			}
+			sprintf(op_store.output_2, "%d", id_hash_table->offset);
+			op_store.control_flux = 0;
+			concatILOCProg(prog, &op_store);
+		}
+		else {
+
+		}
 		$$ = tree_new(lexem);
 		tree_add_child($$, $1);
 		tree_add_child($$, $3);

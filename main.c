@@ -11,8 +11,8 @@ void exporta (void *arvore);
 int main (int argc, char **argv)
 {
   stack = criarPilha();
-  int ret = yyparse(); 
-  exporta (arvore);
+  int ret = yyparse();
+  // exporta (arvore);
   printILOC(prog);
   yylex_destroy();
   return ret;
