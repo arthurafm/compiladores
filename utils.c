@@ -518,10 +518,10 @@ void createLabel (char *label, int *counter) {
     *counter += 1;
 }
 
-void createRegister (char *register, int *counter) {
+void createRegister (char *r, int *counter) {
     char *counterString;
-    sprintf(counterString, "r%d", register, *counter);
-    register = strdup(counterString);
+    sprintf(counterString, "r%d", r, *counter);
+    r = strdup(counterString);
     *counter += 1;
 }
 

@@ -154,17 +154,17 @@ command_block: '{' '}' {
 };
 
 open_closure: {
-	// printaPilha(stack);
+	printaPilha(stack);
 	addEscopo(stack);
 };
 
 close_closure: {
-	// printaPilha(stack);
+	printaPilha(stack);
 	excluirEscopo(stack);
 };
 
 open_premature_closure:	{
-	// printaPilha(stack);
+	printaPilha(stack);
 	addEscopo(stack);
 	stack->escopos_ignorar++;
 }
@@ -224,24 +224,18 @@ simple_command: id '=' precedence_A {
 		exit(ERR_UNDECLARED);
 	}
 	else {
-		 if (strcmp(id_hash_table->type, expr_info.type) != 0) {
-			 /* Erro -> Variável não é do tipo da expressão */
-			//printf("\nvariavel do tipo errado\n");
-		 }
-	 	else {
-			if (strcmp(id_hash_table->nature, strdup("function")) == 0 ) {
-				printf("The identifier \'%s\', in the line %d, is a function, not a variable.", id_info.token_value, id_info.num_line);
-				exit(ERR_FUNCTION);
-			}
-	 		lex_val lexem;
-	 		lexem.num_line = get_line_number();
-	 		lexem.token_type = strdup("comando simples");
-	 		lexem.token_value = strdup("=");
-	 		lexem.type = strdup(id_hash_table->type);
-	 		$$ = tree_new(lexem);
-	 		tree_add_child($$, $1);
-	 		tree_add_child($$, $3);
-	 	}
+		if (strcmp(id_hash_table->nature, strdup("function")) == 0 ) {
+			printf("The identifier \'%s\', in the line %d, is a function, not a variable.", id_info.token_value, id_info.num_line);
+			exit(ERR_FUNCTION);
+		}
+		lex_val lexem;
+		lexem.num_line = get_line_number();
+		lexem.token_type = strdup("comando simples");
+		lexem.token_value = strdup("=");
+		lexem.type = strdup(id_hash_table->type);
+		$$ = tree_new(lexem);
+		tree_add_child($$, $1);
+		tree_add_child($$, $3);
 	}
 }; /* Attribution */
 simple_command: id'('argument_list')' {
@@ -583,9 +577,7 @@ precedence_F: precedence_F '%' precedence_G {
 	tree_add_child($$, $3);
 };
 
-precedence_G: expr{
-	$$ = $1;
-};
+precedence_G: expr;
 precedence_G: '('precedence_A')' {
 	$$ = $2;
 };

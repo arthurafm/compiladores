@@ -152,6 +152,6 @@ void printILOC (iloc_prog *prog);
 void createLabel (char *label, int *counter);
 
 /* Fornece nomes de registradores temporários a serem utilizados na geração de código */
-void createRegister (char *register, int *counter);
+void createRegister (char *r, int *counter);
 
 #endif //_UTILS_H_

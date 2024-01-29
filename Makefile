@@ -1,4 +1,4 @@
-all: etapa4
+all: etapa5
 
 bison:
 	bison -d parser.y
@@ -6,5 +6,5 @@ bison:
 lex.yy.c: scanner.l bison
 	flex scanner.l
 
-etapa4: lex.yy.c main.c parser.tab.c
-	@(gcc -o etapa4 main.c lex.yy.c parser.tab.c utils.c)
+etapa5: lex.yy.c main.c parser.tab.c
+	@(gcc -o etapa5 main.c lex.yy.c parser.tab.c utils.c)

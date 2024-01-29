@@ -12,7 +12,7 @@ int main (int argc, char **argv)
 {
   stack = criarPilha();
   int ret = yyparse(); 
-  // exporta (arvore);
+  exporta (arvore);
   printILOC(prog);
   yylex_destroy();
   return ret;
