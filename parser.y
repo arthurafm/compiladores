@@ -496,7 +496,7 @@ precedence_A: precedence_A TK_OC_OR precedence_B {
 		op_or->input_2 = strdup($3->reg);
 		op_or->output_1 = createRegister(&registerCounter);
 		op_or->output_2 = NULL;
-		$$->reg = op_or->output_1;
+		op_or->control_flux = 0;
 		prog = addOpToProg(prog, op_or);
 	}
 
@@ -523,6 +523,7 @@ precedence_B: precedence_B TK_OC_AND precedence_C {
 		op_and->input_2 = strdup($3->reg);
 		op_and->output_1 = createRegister(&registerCounter);
 		op_and->output_2 = NULL;
+		op_and->control_flux = 0;
 		$$->reg = op_and->output_1;
 		prog = addOpToProg(prog, op_and);
 	}
@@ -542,6 +543,20 @@ precedence_C: precedence_C TK_OC_EQ precedence_D {
 	//lexem.type = strdup(inferencia_tipos($1->info.type, $3->info.type));
 	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
+
+	if (($1->reg != NULL) && ($3->reg != NULL)) { // Resultados estão em registradores
+		iloc_op *op_eq = malloc(sizeof(iloc_op));
+		op_eq->label = NULL;
+		op_eq->operation = strdup("cmp_EQ");
+		op_eq->input_1 = strdup($1->reg);	
+		op_eq->input_2 = strdup($3->reg);
+		op_eq->output_1 = createRegister(&registerCounter);
+		op_eq->output_2 = NULL;
+		op_eq->control_flux = 1;
+		$$->reg = op_eq->output_1;
+		prog = addOpToProg(prog, op_eq);
+	}
+
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
@@ -553,6 +568,20 @@ precedence_C: precedence_C TK_OC_NE precedence_D {
 	//lexem.type = strdup(inferencia_tipos($1->info.type, $3->info.type));
 	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
+
+	if (($1->reg != NULL) && ($3->reg != NULL)) { // Resultados estão em registradores
+		iloc_op *op_ne = malloc(sizeof(iloc_op));
+		op_ne->label = NULL;
+		op_ne->operation = strdup("cmp_NE");
+		op_ne->input_1 = strdup($1->reg);	
+		op_ne->input_2 = strdup($3->reg);
+		op_ne->output_1 = createRegister(&registerCounter);
+		op_ne->output_2 = NULL;
+		op_ne->control_flux = 1;
+		$$->reg = op_ne->output_1;
+		prog = addOpToProg(prog, op_ne);
+	}
+
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
@@ -567,6 +596,20 @@ precedence_D: precedence_D '<' precedence_E {
 	lexem.token_value = strdup("<");
 	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
+
+	if (($1->reg != NULL) && ($3->reg != NULL)) { // Resultados estão em registradores
+		iloc_op *op_lt = malloc(sizeof(iloc_op));
+		op_lt->label = NULL;
+		op_lt->operation = strdup("cmp_LT");
+		op_lt->input_1 = strdup($1->reg);	
+		op_lt->input_2 = strdup($3->reg);
+		op_lt->output_1 = createRegister(&registerCounter);
+		op_lt->output_2 = NULL;
+		op_lt->control_flux = 1;
+		$$->reg = op_lt->output_1;
+		prog = addOpToProg(prog, op_lt);
+	}
+
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
@@ -577,6 +620,20 @@ precedence_D: precedence_D '>' precedence_E {
 	lexem.token_value = strdup(">");
 	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
+
+	if (($1->reg != NULL) && ($3->reg != NULL)) { // Resultados estão em registradores
+		iloc_op *op_gt = malloc(sizeof(iloc_op));
+		op_gt->label = NULL;
+		op_gt->operation = strdup("cmp_GT");
+		op_gt->input_1 = strdup($1->reg);	
+		op_gt->input_2 = strdup($3->reg);
+		op_gt->output_1 = createRegister(&registerCounter);
+		op_gt->output_2 = NULL;
+		op_gt->control_flux = 1;
+		$$->reg = op_gt->output_1;
+		prog = addOpToProg(prog, op_gt);
+	}
+
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
@@ -587,6 +644,20 @@ precedence_D: precedence_D TK_OC_LE precedence_E {
 	lexem.token_value = strdup("<=");
 	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
+
+	if (($1->reg != NULL) && ($3->reg != NULL)) { // Resultados estão em registradores
+		iloc_op *op_le = malloc(sizeof(iloc_op));
+		op_le->label = NULL;
+		op_le->operation = strdup("cmp_LE");
+		op_le->input_1 = strdup($1->reg);	
+		op_le->input_2 = strdup($3->reg);
+		op_le->output_1 = createRegister(&registerCounter);
+		op_le->output_2 = NULL;
+		op_le->control_flux = 1;
+		$$->reg = op_le->output_1;
+		prog = addOpToProg(prog, op_le);
+	}
+
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
@@ -597,6 +668,20 @@ precedence_D: precedence_D TK_OC_GE precedence_E {
 	lexem.token_value = strdup(">=");
 	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
+
+	if (($1->reg != NULL) && ($3->reg != NULL)) { // Resultados estão em registradores
+		iloc_op *op_ge = malloc(sizeof(iloc_op));
+		op_ge->label = NULL;
+		op_ge->operation = strdup("cmp_GE");
+		op_ge->input_1 = strdup($1->reg);	
+		op_ge->input_2 = strdup($3->reg);
+		op_ge->output_1 = createRegister(&registerCounter);
+		op_ge->output_2 = NULL;
+		op_ge->control_flux = 1;
+		$$->reg = op_ge->output_1;
+		prog = addOpToProg(prog, op_ge);
+	}
+
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
