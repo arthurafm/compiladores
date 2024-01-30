@@ -242,73 +242,23 @@ simple_command: id '=' precedence_A {
 		lexem.token_type = strdup("comando simples");
 		lexem.token_value = strdup("=");
 		lexem.type = strdup(id_hash_table->type);
-		if (strcmp(expr_info.token_type, strdup("literal")) == 0) { // Se for um literal que está sendo atribuído
-			iloc_op *op_load = malloc(sizeof(iloc_op));
-			op_load->label = NULL;
-			op_load->operation = strdup("loadI");
-			op_load->input_1 = strdup(expr_info.token_value);
-			op_load->input_2 = NULL;
-			op_load->output_1 = createRegister(&registerCounter);
-			op_load->output_2 = NULL;
-			op_load->control_flux = 0;
-			prog = addOpToProg(prog, op_load);
-			iloc_op *op_store = malloc(sizeof(iloc_op));
-			op_store->label = NULL;
-			op_store->operation = strdup("storeAI");
-			op_store->input_1 = strdup(op_load->output_1);
-			op_store->input_2 = NULL;
-			// Se for uma variável global
-			if (checkContext (stack, strdup(id_info.token_value)) == 0) {
-				op_store->output_1 = strdup("rbss");
-			}
-			// Se for local
-			else if (checkContext (stack, strdup(id_info.token_value)) == 1) {
-				op_store->output_1 = strdup("rfp");
-			}
-			op_store->output_2 = malloc(sizeof(char) * 5);
-			sprintf(op_store->output_2, "%d", id_hash_table->offset);
-			op_store->control_flux = 0;
-			prog = addOpToProg(prog, op_store);
+		iloc_op *op_store = malloc(sizeof(iloc_op));
+		op_store->label = NULL;
+		op_store->operation = strdup("storeAI");
+		op_store->input_1 = $3->reg;
+		op_store->input_2 = NULL;
+		// Se for uma variável global
+		if (checkContext (stack, strdup(id_info.token_value)) == 0) {
+			op_store->output_1 = strdup("rbss");
 		}
-		else if (strcmp(expr_info.token_type, strdup("identificador")) == 0) { // Se for uma atribuição de identificador direta
-			iloc_op *op_load = malloc(sizeof(iloc_op));
-			op_load->label = NULL;
-			op_load->operation = strdup("loadAI");
-			if (checkContext (stack, strdup(expr_info.token_value)) == 0) {
-				op_load->input_1 = strdup("rbss");
-			}
-			// Se for local
-			else if (checkContext (stack, strdup(expr_info.token_value)) == 1) {
-				op_load->input_1 = strdup("rfp");
-			}
-			op_load->input_2 = malloc(sizeof(char) * 5);
-			ht_item *id2 = encontrarItemPilha(stack, strdup(expr_info.token_value));
-			sprintf(op_load->input_2, "%d", id2->offset);
-			op_load->output_1 = createRegister(&registerCounter);
-			op_load->output_2 = NULL;
-			op_load->control_flux = 0;
-			prog = addOpToProg(prog, op_load);
-
-			iloc_op *op_store = malloc(sizeof(iloc_op));
-			op_store->label = NULL;
-			op_store->operation = strdup("storeAI");
-			op_store->input_1 = strdup(op_load->output_1);
-			op_store->input_2 = NULL;
-			if (checkContext (stack, strdup(id_info.token_value)) == 0) {
-				op_store->output_1 = strdup("rbss");
-			}
-			// Se for local
-			else if (checkContext (stack, strdup(id_info.token_value)) == 1) {
-				op_store->output_1 = strdup("rfp");
-			}
-			op_store->output_2 = malloc(sizeof(char) * 5);
-			sprintf(op_store->output_2, "%d", id_hash_table->offset);
-			op_store->control_flux = 0;
-			prog = addOpToProg(prog, op_store);
+		// Se for local
+		else if (checkContext (stack, strdup(id_info.token_value)) == 1) {
+			op_store->output_1 = strdup("rfp");
 		}
-		else { // Se for uma atribuição de expressão
-
-		}
+		op_store->output_2 = malloc(sizeof(char) * 5);
+		sprintf(op_store->output_2, "%d", id_hash_table->offset);
+		op_store->control_flux = 0;
+		prog = addOpToProg(prog, op_store);
 		$$ = tree_new(lexem);
 		tree_add_child($$, $1);
 		tree_add_child($$, $3);
@@ -431,10 +381,40 @@ expr: id {
 		}
 	}
 	$$ = $1;
+	/* Load de variável */
+	iloc_op *op_load = malloc(sizeof(iloc_op));
+	op_load->label = NULL;
+	op_load->operation = strdup("loadAI");
+	if (checkContext (stack, strdup($1->info.token_value)) == 0) {
+		op_load->input_1 = strdup("rbss");
+	}
+	// Se for local
+	else if (checkContext (stack, strdup($1->info.token_value)) == 1) {
+		op_load->input_1 = strdup("rfp");
+	}
+	op_load->input_2 = malloc(sizeof(char) * 5);
+	ht_item *id2 = encontrarItemPilha(stack, strdup($1->info.token_value));
+	sprintf(op_load->input_2, "%d", id2->offset);
+	op_load->output_1 = createRegister(&registerCounter);
+	op_load->output_2 = NULL;
+	op_load->control_flux = 0;
+	prog = addOpToProg(prog, op_load);
+	$$->reg = op_load->output_1;
 };
 expr: lit {
 	//printf("%s tem tipo: %s", $1->info.token_value, $1->info.type);
 	$$ = $1;
+	/* Load Imediato */
+	iloc_op *op_load = malloc(sizeof(iloc_op));
+	op_load->label = NULL;
+	op_load->operation = strdup("loadI");
+	op_load->input_1 = strdup($1->info.token_value);
+	op_load->input_2 = NULL;
+	op_load->output_1 = createRegister(&registerCounter);
+	op_load->output_2 = NULL;
+	op_load->control_flux = 0;
+	prog = addOpToProg(prog, op_load);
+	$$->reg = op_load->output_1;
 };
 expr: id'('argument_list')' {
 	lex_val id_lex = $1->info;
@@ -507,6 +487,19 @@ precedence_A: precedence_A TK_OC_OR precedence_B {
 	lexem.token_value = strdup("|");
 	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
+
+	if (($1->reg != NULL) && ($3->reg != NULL)) { // Resultados estão em registradores
+		iloc_op *op_or = malloc(sizeof(iloc_op));
+		op_or->label = NULL;
+		op_or->operation = strdup("or");
+		op_or->input_1 = strdup($1->reg);	
+		op_or->input_2 = strdup($3->reg);
+		op_or->output_1 = createRegister(&registerCounter);
+		op_or->output_2 = NULL;
+		$$->reg = op_or->output_1;
+		prog = addOpToProg(prog, op_or);
+	}
+
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
@@ -521,6 +514,19 @@ precedence_B: precedence_B TK_OC_AND precedence_C {
 	lexem.token_value = strdup("&");
 	lexem.type = strdup("bool");
 	$$ = tree_new(lexem);
+
+	if (($1->reg != NULL) && ($3->reg != NULL)) { // Resultados estão em registradores
+		iloc_op *op_and = malloc(sizeof(iloc_op));
+		op_and->label = NULL;
+		op_and->operation = strdup("and");
+		op_and->input_1 = strdup($1->reg);	
+		op_and->input_2 = strdup($3->reg);
+		op_and->output_1 = createRegister(&registerCounter);
+		op_and->output_2 = NULL;
+		$$->reg = op_and->output_1;
+		prog = addOpToProg(prog, op_and);
+	}
+
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
@@ -605,6 +611,19 @@ precedence_E: precedence_E '+' precedence_F {
 	lexem.token_value = strdup("+");
 	lexem.type = strdup(inferencia_tipos($1->info.type, $3->info.type));
 	$$ = tree_new(lexem);
+
+	if (($1->reg != NULL) && ($3->reg != NULL)) { // Resultados estão em registradores
+		iloc_op *op_add = malloc(sizeof(iloc_op));
+		op_add->label = NULL;
+		op_add->operation = strdup("add");
+		op_add->input_1 = strdup($1->reg);	
+		op_add->input_2 = strdup($3->reg);
+		op_add->output_1 = createRegister(&registerCounter);
+		op_add->output_2 = NULL;
+		$$->reg = op_add->output_1;
+		prog = addOpToProg(prog, op_add);
+	}
+
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
@@ -615,6 +634,19 @@ precedence_E: precedence_E '-' precedence_F {
 	lexem.token_value = strdup("-");
 	lexem.type = strdup(inferencia_tipos($1->info.type, $3->info.type));
 	$$ = tree_new(lexem);
+
+	if (($1->reg != NULL) && ($3->reg != NULL)) { // Resultados estão em registradores
+		iloc_op *op_sub = malloc(sizeof(iloc_op));
+		op_sub->label = NULL;
+		op_sub->operation = strdup("sub");
+		op_sub->input_1 = strdup($1->reg);	
+		op_sub->input_2 = strdup($3->reg);
+		op_sub->output_1 = createRegister(&registerCounter);
+		op_sub->output_2 = NULL;
+		$$->reg = op_sub->output_1;
+		prog = addOpToProg(prog, op_sub);
+	}
+
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
@@ -629,6 +661,19 @@ precedence_F: precedence_F '*' precedence_G {
 	lexem.token_value = strdup("*");
 	lexem.type = strdup(inferencia_tipos($1->info.type, $3->info.type));
 	$$ = tree_new(lexem);
+
+	if (($1->reg != NULL) && ($3->reg != NULL)) { // Resultados estão em registradores
+		iloc_op *op_mult = malloc(sizeof(iloc_op));
+		op_mult->label = NULL;
+		op_mult->operation = strdup("mult");
+		op_mult->input_1 = strdup($1->reg);	
+		op_mult->input_2 = strdup($3->reg);
+		op_mult->output_1 = createRegister(&registerCounter);
+		op_mult->output_2 = NULL;
+		$$->reg = op_mult->output_1;
+		prog = addOpToProg(prog, op_mult);
+	}
+
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
@@ -639,6 +684,18 @@ precedence_F: precedence_F '/' precedence_G {
 	lexem.token_value = strdup("/");
 	lexem.type = strdup(inferencia_tipos($1->info.type, $3->info.type));
 	$$ = tree_new(lexem);
+
+	if (($1->reg != NULL) && ($3->reg != NULL)) { // Resultados estão em registradores
+		iloc_op *op_div = malloc(sizeof(iloc_op));
+		op_div->label = NULL;
+		op_div->operation = strdup("div");
+		op_div->input_1 = strdup($1->reg);	
+		op_div->input_2 = strdup($3->reg);
+		op_div->output_1 = createRegister(&registerCounter);
+		op_div->output_2 = NULL;
+		$$->reg = op_div->output_1;
+		prog = addOpToProg(prog, op_div);
+	}
 	tree_add_child($$, $1);
 	tree_add_child($$, $3);
 };
@@ -665,6 +722,28 @@ precedence_G: '-'precedence_G {
 	lexem.token_value = strdup("-");
 	lexem.type = strdup($2->info.type);
 	$$ = tree_new(lexem);
+
+	if ($2->reg != NULL) {
+		iloc_op *op_load = malloc(sizeof(iloc_op));
+		op_load->label = NULL;
+		op_load->operation = strdup("loadI");
+		op_load->input_1 = strdup("0");	
+		op_load->input_2 = NULL;
+		op_load->output_1 = createRegister(&registerCounter);
+		op_load->output_2 = NULL;
+		prog = addOpToProg(prog, op_load);
+
+		iloc_op *op_sub = malloc(sizeof(iloc_op));
+		op_sub->label = NULL;
+		op_sub->operation = strdup("sub");
+		op_sub->input_1 = strdup(op_load->output_1);	
+		op_sub->input_2 = strdup($2->reg);
+		op_sub->output_1 = createRegister(&registerCounter);
+		op_sub->output_2 = NULL;
+		$$->reg = op_sub->output_1;
+		prog = addOpToProg(prog, op_sub);
+	}
+
 	tree_add_child($$, $2);
 };
 precedence_G: '!'precedence_G {
@@ -675,6 +754,9 @@ precedence_G: '!'precedence_G {
 	lexem.token_value = strdup("!");
 	lexem.type = strdup($2->info.type);
 	$$ = tree_new(lexem);
+
+
+
 	tree_add_child($$, $2);
 };
 

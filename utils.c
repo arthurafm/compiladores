@@ -29,7 +29,7 @@ tree_t *tree_new(lex_val info) {
     n->info.token_type = strdup(info.token_type);
     n->info.token_value = strdup(info.token_value);
     n->info.type = strdup(info.type);
-    n->reg = 0;
+    n->reg = NULL;
     n->number_of_children = 0;
     n->children = NULL;
   }
@@ -44,6 +44,7 @@ void tree_free(tree_t *tree) {
       tree_free(tree->children[i]);
     }
     free(tree->children);
+    free(tree->reg);
     free(tree->info.token_type);
 	free(tree->info.token_value);
     free(tree->info.type);
