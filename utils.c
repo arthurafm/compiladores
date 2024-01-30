@@ -174,8 +174,8 @@ void ht_insert (hash_table *table, char *key, int num_line, char *nature, char *
         }
 
         table->items[index] = item;
-        table->count++;
         item->offset = table->count;
+        table->count++;
     }
     else {
         if (strcmp(cur_item->key, key) == 0) {
@@ -549,19 +549,19 @@ iloc_prog* addOpToProg (iloc_prog *prog, iloc_op *op) {
 }
 
 short checkContext (pilha* pilha_atual, char *key) {
-    int contador = pilha_atual->num_escopos;
+    // Caso haja mais de um escopo, é local
+	int contador = pilha_atual->num_escopos;
 	hash_table *hash_table_atual;
 	while(contador >= 1){
 		hash_table_atual = pilha_atual->escopos[contador - 1];
-		if(ht_search(hash_table_atual, key) != NULL){
-			if (contador == pilha_atual->num_escopos) {
-                return 0;
+		if (ht_search(hash_table_atual, key) != NULL){
+            if (contador == pilha_atual->num_escopos) {
+                return 1;
             }
             else {
-                return 1;
+                return 0;
             }
 		}
 		contador--;
 	}
-    return 2;
 }
