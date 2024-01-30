@@ -270,7 +270,43 @@ simple_command: id '=' precedence_A {
 			op_store->control_flux = 0;
 			prog = addOpToProg(prog, op_store);
 		}
-		else {
+		else if (strcmp(expr_info.token_type, strdup("identificador")) == 0) { // Se for uma atribuição de identificador direta
+			iloc_op *op_load = malloc(sizeof(iloc_op));
+			op_load->label = NULL;
+			op_load->operation = strdup("loadAI");
+			if (checkContext (stack, strdup(expr_info.token_value)) == 0) {
+				op_load->input_1 = strdup("rbss");
+			}
+			// Se for local
+			else if (checkContext (stack, strdup(expr_info.token_value)) == 1) {
+				op_load->input_1 = strdup("rfp");
+			}
+			op_load->input_2 = malloc(sizeof(char) * 5);
+			ht_item *id2 = encontrarItemPilha(stack, strdup(expr_info.token_value));
+			sprintf(op_load->input_2, "%d", id2->offset);
+			op_load->output_1 = createRegister(&registerCounter);
+			op_load->output_2 = NULL;
+			op_load->control_flux = 0;
+			prog = addOpToProg(prog, op_load);
+
+			iloc_op *op_store = malloc(sizeof(iloc_op));
+			op_store->label = NULL;
+			op_store->operation = strdup("storeAI");
+			op_store->input_1 = strdup(op_load->output_1);
+			op_store->input_2 = NULL;
+			if (checkContext (stack, strdup(id_info.token_value)) == 0) {
+				op_store->output_1 = strdup("rbss");
+			}
+			// Se for local
+			else if (checkContext (stack, strdup(id_info.token_value)) == 1) {
+				op_store->output_1 = strdup("rfp");
+			}
+			op_store->output_2 = malloc(sizeof(char) * 5);
+			sprintf(op_store->output_2, "%d", id_hash_table->offset);
+			op_store->control_flux = 0;
+			prog = addOpToProg(prog, op_store);
+		}
+		else { // Se for uma atribuição de expressão
 
 		}
 		$$ = tree_new(lexem);

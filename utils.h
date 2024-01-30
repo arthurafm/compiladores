@@ -19,6 +19,7 @@ typedef struct lex_value {
 
 typedef struct tree {
     lex_val info;
+    int reg;
     int number_of_children;
     struct tree **children;
 } tree_t;
