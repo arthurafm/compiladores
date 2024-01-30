@@ -2,7 +2,7 @@
     /* GRUPO G */
 	/* Arthur Alves Ferreira Melo - 00333985 */
 	/* Emanuel Pacheco Thiel -  00170313 */
-	
+
 	#include <string.h>
 	#include <stdlib.h>
 	#include <stdio.h>
@@ -243,30 +243,32 @@ simple_command: id '=' precedence_A {
 		lexem.token_value = strdup("=");
 		lexem.type = strdup(id_hash_table->type);
 		if (strcmp(expr_info.token_type, strdup("literal")) == 0) { // Se for um literal que está sendo atribuído
-			iloc_op op_load;
-			op_load.operation = strdup("loadI");
-			op_load.input_1 = strdup(expr_info.token_value);
-			op_load.input_2 = NULL;
-			op_load.output_1 = createRegister(&registerCounter); // Não está funcionando
-			op_load.output_2 = NULL;
-			op_load.control_flux = 0;
-			printf("%s %s => %s\n", op_load.operation, op_load.input_1, op_load.output_1);
-			concatILOCProg(prog, &op_load);
-			iloc_op op_store;
-			op_store.operation = strdup("storeAI");
-			op_store.input_1 = strdup(op_load.output_1);
-			op_store.input_2 = NULL;
+			iloc_op *op_load = malloc(sizeof(iloc_op));
+			op_load->label = NULL;
+			op_load->operation = strdup("loadI");
+			op_load->input_1 = strdup(expr_info.token_value);
+			op_load->input_2 = NULL;
+			op_load->output_1 = createRegister(&registerCounter);
+			op_load->output_2 = NULL;
+			op_load->control_flux = 0;
+			prog = addOpToProg(prog, op_load);
+			iloc_op *op_store = malloc(sizeof(iloc_op));
+			op_store->label = NULL;
+			op_store->operation = strdup("storeAI");
+			op_store->input_1 = strdup(op_load->output_1);
+			op_store->input_2 = NULL;
 			// Se for uma variável global
 			if (checkContext (stack, strdup(id_info.token_value)) == 0) {
-				op_store.output_1 = strdup("rbss");
+				op_store->output_1 = strdup("rbss");
 			}
 			// Se for local
 			else if (checkContext (stack, strdup(id_info.token_value)) == 1) {
-				op_store.output_1 = strdup("rfp");
+				op_store->output_1 = strdup("rfp");
 			}
-			sprintf(op_store.output_2, "%d", id_hash_table->offset);
-			op_store.control_flux = 0;
-			concatILOCProg(prog, &op_store);
+			op_store->output_2 = malloc(sizeof(char) * 5);
+			sprintf(op_store->output_2, "%d", id_hash_table->offset);
+			op_store->control_flux = 0;
+			prog = addOpToProg(prog, op_store);
 		}
 		else {
 

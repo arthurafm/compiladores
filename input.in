@@ -1,7 +1,5 @@
 () >= int ! main {
-    int a, b, c;
+    int a;
     a = 2;
-    b = 3;
-    c = a + b;
     return 0;
 }

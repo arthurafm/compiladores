@@ -497,10 +497,10 @@ void printILOC (iloc_prog *prog) {
             }
             if (prog->operation->output_1 != NULL) {
                 if (prog->operation->control_flux == 0) { // Se não for uma operação de controle de fluxo
-                    printf("=> %s", prog->operation->output_1);
+                    printf(" => %s", prog->operation->output_1);
                 }
                 else { // Se for uma operação de controle de fluxo
-                    printf("-> %s", prog->operation->output_1);
+                    printf(" -> %s", prog->operation->output_1);
                 }
             }
             if (prog->operation->output_2 != NULL) {
@@ -513,28 +513,39 @@ void printILOC (iloc_prog *prog) {
 }
 
 char* createLabel (int *counter) {
-    char *counterString;
+    char *counterString = malloc(sizeof(char) * 8);
     sprintf(counterString, "L%d", *counter);
     *counter += 1;
     return strdup(counterString);
 }
 
 char* createRegister (int *counter) {
-    char *counterString;
+    char *counterString = malloc(sizeof(char) * 8);
     sprintf(counterString, "r%d", *counter);
     *counter += 1;
     return strdup(counterString);
 }
 
-void concatILOCProg (iloc_prog *prog, iloc_op *op) {
-    iloc_prog *cursor = prog;
-    while (cursor->next_op != NULL) {
-        cursor = cursor->next_op;
+iloc_prog* addOpToProg (iloc_prog *prog, iloc_op *op) {
+    if (prog == NULL) {
+        iloc_prog *n_prog = malloc(sizeof(iloc_prog));
+        n_prog->operation = op;
+        n_prog->next_op = NULL;
+        prog = n_prog;
     }
-    struct iloc_program *new_op;
-    new_op->operation = op;
-    new_op->next_op = NULL;
-    cursor->next_op = new_op;
+    else {
+        iloc_prog *cursor = prog;
+
+        while (cursor->next_op != NULL) {
+            cursor = cursor->next_op;
+        }
+
+        iloc_prog *n_prog = malloc(sizeof(iloc_prog));
+        n_prog->operation = op;
+        n_prog->next_op = NULL;
+        cursor->next_op = n_prog;
+    }
+    return prog;
 }
 
 short checkContext (pilha* pilha_atual, char *key) {
