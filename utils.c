@@ -30,6 +30,9 @@ tree_t *tree_new(lex_val info) {
     n->info.token_value = strdup(info.token_value);
     n->info.type = strdup(info.type);
     n->reg = NULL;
+
+    n->prog = newILOCprog();
+
     n->number_of_children = 0;
     n->children = NULL;
   }
@@ -48,6 +51,9 @@ void tree_free(tree_t *tree) {
     free(tree->info.token_type);
 	free(tree->info.token_value);
     free(tree->info.type);
+
+    freeILOCprog(tree->prog);
+
     free(tree);
   } else {
     printf("Erro: %s recebeu parâmetro tree = %p.\n", __FUNCTION__, tree);
@@ -484,6 +490,66 @@ char *inferencia_tipos(char *tipo1, char *tipo2){
 	return retorno;
 }
 
+iloc_op* newILOCop (char *label,
+                    char *operation,
+                    char *input_1,
+                    char *input_2,
+                    char *output_1,
+                    char *output_2,
+                    short control_flux) {
+    iloc_op *n = malloc(sizeof(iloc_op));
+
+    n->label = label;
+    n->operation = operation;
+    n->input_1 = input_1;
+    n->input_2 = input_2;
+    n->output_1 = output_1;
+    n->output_2 = output_2;
+    n->control_flux = control_flux;
+
+    return n;
+}
+
+void freeILOCop (iloc_op* op) {
+    free(op->label);
+    free(op->operation);
+    free(op->input_1);
+    free(op->input_2);
+    free(op->output_1);
+    free(op->output_2);
+    free(op);
+}
+
+iloc_prog* newILOCprog () {
+    
+    iloc_prog* n = malloc(sizeof(iloc_prog));
+
+    n->operation = newILOCop(
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        -1
+    );
+
+    n->next_op = NULL;
+
+    return n;
+}
+
+void freeILOCprog (iloc_prog *prog) {
+    iloc_prog* temp = prog;
+
+    while (prog) {
+        temp = prog;
+        prog = prog->next_op;
+        freeILOCop(temp->operation);
+        free(temp);
+    }
+}
+
 void printILOC (iloc_prog *prog) {
     while (prog != NULL) {
         if (prog->operation != NULL) {
@@ -550,7 +616,7 @@ iloc_prog* addOpToProg (iloc_prog *prog, iloc_op *op) {
     return prog;
 }
 
-short checkContext (pilha* pilha_atual, char *key) {
+char* checkContext (pilha* pilha_atual, char *key) {
     // Caso haja mais de um escopo, é local
 	int contador = pilha_atual->num_escopos;
 	hash_table *hash_table_atual;
@@ -558,12 +624,13 @@ short checkContext (pilha* pilha_atual, char *key) {
 		hash_table_atual = pilha_atual->escopos[contador - 1];
 		if (ht_search(hash_table_atual, key) != NULL){
             if (contador == pilha_atual->num_escopos) {
-                return 1;
+                return strdup("rfp");
             }
             else {
-                return 0;
+                return strdup("rbss");
             }
 		}
 		contador--;
 	}
+    return NULL;
 }

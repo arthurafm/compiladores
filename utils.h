@@ -8,22 +8,6 @@
 
 #define SIZE_TABLE 40
 
-/* --- Estrutura da AST --- */
-
-typedef struct lex_value {
-    int num_line;
-    char *token_type;
-    char *token_value;
-    char *type;
-} lex_val;
-
-typedef struct tree {
-    lex_val info;
-    char *reg;
-    int number_of_children;
-    struct tree **children;
-} tree_t;
-
 /* --- Estrutura da Tabela de Símbolos --- */
 
 typedef struct hash_table_item {
@@ -67,6 +51,24 @@ typedef struct iloc_program {
     iloc_op *operation;
     struct iloc_program *next_op;
 } iloc_prog;
+
+/* --- Estrutura da AST --- */
+
+typedef struct lex_value {
+    int num_line;
+    char *token_type;
+    char *token_value;
+    char *type;
+} lex_val;
+
+typedef struct tree {
+    lex_val info;
+    char *reg;
+    iloc_prog *prog;
+    int number_of_children;
+    struct tree **children;
+} tree_t;
+
 
 /* Retorna o número da linha atual do código-fonte */
 int get_line_number();
@@ -147,6 +149,24 @@ void addItemEscopo(pilha* pilha_atual, char *key, int num_line, char *nature, ch
 void printaPilha(pilha *pilha_atual);
 char *inferencia_tipos(char *tipo1, char *tipo2);
 
+/* Cria uma operação ILOC */
+iloc_op* newILOCop (char *label,
+                    char *operation,
+                    char *input_1,
+                    char *input_2,
+                    char *output_1,
+                    char *output_2,
+                    short control_flux);
+
+/* Deleta operação ILOC */
+void freeILOCop (iloc_op *op);
+
+/* Cria um programa ILOC */
+iloc_prog* newILOCprog ();
+
+/* Deleta programa ILOC */
+void freeILOCprog (iloc_prog *prog);
+
 /* Printa programa ILOC */
 void printILOC (iloc_prog *prog);
 
@@ -160,7 +180,7 @@ char* createRegister (int *counter);
 iloc_prog* addOpToProg (iloc_prog *prog, iloc_op *op);
 
 /* Checa contexto do identificador, se é global ou local; 0 = global, 1 = local, 2 = não encontrou */
-short checkContext (pilha* pilha_atual, char *key);
+char* checkContext (pilha* pilha_atual, char *key);
 
 
 #endif //_UTILS_H_
