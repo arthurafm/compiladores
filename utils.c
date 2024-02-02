@@ -72,8 +72,8 @@ static void imprimirLabels(tree_t *tree) {
 	if (tree != NULL) {
 		printf("%p [label=\"%s\"]\n", (void *) tree, tree->info.token_value);
 		for (int i = 0; i < tree->number_of_children; i++){
-      imprimirLabels(tree->children[i]);
-    }
+            imprimirLabels(tree->children[i]);
+        }
 	}
 }
 
@@ -550,33 +550,52 @@ void freeILOCprog (iloc_prog *prog) {
     }
 }
 
-void printILOC (iloc_prog *prog) {
-    while (prog != NULL) {
-        if (prog->operation != NULL) {
-            if (prog->operation->label != NULL) {
-                printf("%s: ", prog->operation->label);
+void printILOC (tree_t *t) {
+    if (t != NULL) {
+        for (int i = 0; i < t->number_of_children; i++) {
+            if (strcmp(t->children[i]->info.token_type, strdup("comando simples")) != 0) {
+                printILOC (t->children[i]);
             }
-            printf("%s", prog->operation->operation);
-            if (prog->operation->input_1 != NULL) {
-                printf(" %s", prog->operation->input_1);
-            }
-            if (prog->operation->input_2 != NULL) {
-                printf(", %s", prog->operation->input_2);
-            }
-            if (prog->operation->output_1 != NULL) {
-                if (prog->operation->control_flux == 0) { // Se não for uma operação de controle de fluxo
-                    printf(" => %s", prog->operation->output_1);
-                }
-                else { // Se for uma operação de controle de fluxo
-                    printf(" -> %s", prog->operation->output_1);
-                }
-            }
-            if (prog->operation->output_2 != NULL) {
-                printf(", %s", prog->operation->output_2);
-            }
-            printf("\n");
         }
-        prog = prog->next_op;
+        if (t->prog != NULL) {
+            iloc_prog *cursor = t->prog;
+            while (cursor != NULL) {
+                if (cursor->operation != NULL) {
+                    if (cursor->operation->label != NULL) {
+                        printf("%s: ", cursor->operation->label);
+                    }
+                    if (cursor->operation->operation != NULL) {
+                        printf("%s", cursor->operation->operation);
+                    }
+                    if (cursor->operation->input_1 != NULL) {
+                        printf(" %s", cursor->operation->input_1);
+                    }
+                    if (cursor->operation->input_2 != NULL) {
+                        printf(", %s", cursor->operation->input_2);
+                    }
+                    if (cursor->operation->output_1 != NULL) {
+                        if (cursor->operation->control_flux == 0) { // Se não for uma operação de controle de fluxo
+                            printf(" => %s", cursor->operation->output_1);
+                        }
+                        else { // Se for uma operação de controle de fluxo
+                            printf(" -> %s", cursor->operation->output_1);
+                        }
+                    }
+                    if (cursor->operation->output_2 != NULL) {
+                        printf(", %s", cursor->operation->output_2);
+                    }
+                    if (cursor->operation->operation != NULL) {
+                        printf("\n");
+                    }
+                }
+                cursor = cursor->next_op;
+            }
+        }
+        for (int i = 0; i < t->number_of_children; i++) {
+            if (strcmp(t->children[i]->info.token_type, strdup("comando simples")) == 0) {
+                printILOC (t->children[i]);
+            }
+        }
     }
 }
 

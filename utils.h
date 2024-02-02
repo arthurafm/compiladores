@@ -168,7 +168,7 @@ iloc_prog* newILOCprog ();
 void freeILOCprog (iloc_prog *prog);
 
 /* Printa programa ILOC */
-void printILOC (iloc_prog *prog);
+void printILOC (tree_t *t);
 
 /* Fornece nomes de rótulos a serem utilizados na geração de código */
 char* createLabel (int *counter);
