@@ -182,5 +182,7 @@ iloc_prog* addOpToProg (iloc_prog *prog, iloc_op *op);
 /* Checa contexto do identificador, se é global ou local; 0 = global, 1 = local, 2 = não encontrou */
 char* checkContext (pilha* pilha_atual, char *key);
 
+/* Acha a primeira operação ILOC a ser realizada em um comando simples */
+iloc_op* findFirstOp (tree_t *t);
 
 #endif //_UTILS_H_

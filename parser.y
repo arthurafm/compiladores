@@ -244,7 +244,7 @@ simple_command: id '=' precedence_A {
 		
 		$$ = tree_new(lexem);
 
-		char *temp_out2 = malloc(sizeof(char) * 5);
+		char *temp_out2 = malloc(sizeof(char) * 8);
 		sprintf(temp_out2, "%d", id_hash_table->offset);
 		iloc_op *op_store = newILOCop(
 			NULL,
@@ -346,6 +346,28 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_b
 	lexem.token_value = strdup("if");
 	lexem.type = strdup($3->info.type);
 	$$ = tree_new(lexem);
+
+	/* Código do precedence_A tem que ocorrer antes desse cbr */
+
+	/* Seta labels nos command_block */
+
+	iloc_op *firstOp_cb1 = findFirstOp($5);
+	iloc_op *firstOp_cb2 = findFirstOp($7);
+
+	firstOp_cb1->label = createLabel(&labelCounter);
+	firstOp_cb2->label = createLabel(&labelCounter);
+
+	iloc_op *op_cbr = newILOCop (
+		NULL,
+		strdup("cbr"),
+		$3->reg,
+		NULL,
+		firstOp_cb1->label,
+		firstOp_cb2->label,
+		1
+	);
+	$$->prog = addOpToProg($$->prog, op_cbr);
+
 	tree_add_child($$, $3);
 	tree_add_child($$, $5);
 	tree_add_child($$, $7);
@@ -379,7 +401,7 @@ expr: id {
 	}
 	$$ = $1;
 	/* Load de variável */
-	char *temp_in2 = malloc(sizeof(char) * 5);
+	char *temp_in2 = malloc(sizeof(char) * 8);
 	ht_item *id2 = encontrarItemPilha(stack, strdup($1->info.token_value));
 	sprintf(temp_in2, "%d", id2->offset);
 	iloc_op *op_load = newILOCop (

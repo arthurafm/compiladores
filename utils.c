@@ -614,7 +614,7 @@ char* createRegister (int *counter) {
 }
 
 iloc_prog* addOpToProg (iloc_prog *prog, iloc_op *op) {
-    if (prog == NULL) {
+    if (prog->operation->operation == NULL) {
         iloc_prog *n_prog = malloc(sizeof(iloc_prog));
         n_prog->operation = op;
         n_prog->next_op = NULL;
@@ -651,5 +651,21 @@ char* checkContext (pilha* pilha_atual, char *key) {
 		}
 		contador--;
 	}
+    return NULL;
+}
+
+iloc_op* findFirstOp (tree_t *t) {
+    if (t != NULL) {
+        if (t->prog->operation->operation != NULL) {
+            if (t->number_of_children == 0) {
+                return t->prog->operation;
+            }
+            for (int i = 0; i < t->number_of_children; i++) {
+                if (findFirstOp(t->children[i]) != NULL) {
+                    return findFirstOp(t->children[i]);
+                }
+            }
+        }
+    }
     return NULL;
 }
