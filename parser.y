@@ -362,6 +362,38 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block {
 	lexem.type = strdup($3->info.type);
 	$$ = tree_new(lexem);
 
+	char *label_if = createLabel(&labelCounter), *label_post = createLabel(&labelCounter);
+
+	$$->label = label_post;
+
+	iloc_op *firstOp_cb = findFirstOp($5);
+
+	firstOp_cb->label = label_if;
+
+	iloc_op *op_jump = newILOCop (
+		NULL,
+		strdup("jumpI"),
+		NULL,
+		NULL,
+		label_post,
+		NULL,
+		1
+	);
+
+	tree_t *lastSC_cb = findLastProg($5);
+	lastSC_cb->prog = addOpToProg(lastSC_cb->prog, op_jump);
+
+	iloc_op *op_cbr = newILOCop (
+		NULL,
+		strdup("cbr"),
+		$3->reg,
+		NULL,
+		label_if,
+		label_post,
+		1
+	);
+	$$->prog = addOpToProg($$->prog, op_cbr);
+
 	tree_add_child($$, $3);
 	tree_add_child($$, $5);
 	tree_add_child($$, NULL);
@@ -379,8 +411,6 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_b
 
 	/* Após command_block's, deve ter um jump para após do command_block do else */
 	$$->label = label_post;
-
-	tree_t *test = $$;
 
 	/* Aplica labels nos blocos de comando relacionados ao if-else */
 	iloc_op *firstOp_cb1 = findFirstOp($5);
