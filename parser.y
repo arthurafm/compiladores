@@ -198,6 +198,33 @@ open_premature_closure:	{
 simple_command_list: simple_command';' {
 	$$ = $1;
 	$$->isLast = 1;
+	if ((strcmp($$->info.token_value, strdup("if")) == 0) || (strcmp($$->info.token_value, strdup("while")) == 0)) {
+		tree_t *last = $$->children[$$->number_of_children - 1];
+
+		lex_val lexem;
+		lexem.num_line = get_line_number();
+		lexem.token_type = strdup("comando simples");
+		lexem.token_value = strdup("");
+		lexem.type = strdup("");
+		last = tree_new(lexem);
+
+		iloc_op *op_nop = newILOCop (
+			$$->label,
+			strdup("nop"),
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			-1
+		);
+
+		last->prog = addOpToProg(last->prog, op_nop);
+
+		$$->children[$$->number_of_children - 1] = last;
+	}
+	tree_t *test = $$;
+	int a;
+	a = 1;
 };
 simple_command_list: simple_command';' simple_command_list {
 	if ($1 != NULL) {
