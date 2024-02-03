@@ -699,6 +699,9 @@ tree_t* findLastProg (tree_t *t) {
         while ((cursor->isLast != 1) && (cursor != NULL) && (cursor->number_of_children != 0)) {
             cursor = cursor->children[cursor->number_of_children - 1];
         }
+        if ((strcmp(t->info.token_value, strdup("if")) == 0) || (strcmp(t->info.token_value, strdup("while")) == 0)) {
+            cursor = cursor->children[cursor->number_of_children - 1];
+        }
         return cursor;
     }
     return NULL;

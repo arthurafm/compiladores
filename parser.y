@@ -488,8 +488,6 @@ simple_command: TK_PR_WHILE '(' precedence_A ')' command_block {
 
 	char *label_while = createLabel(&labelCounter), *label_cb = createLabel(&labelCounter), *label_post = createLabel(&labelCounter);
 
-	/* label_ while deve estar apontando pro começo da precendence_A */
-
 	$$->label = label_post;
 
 	iloc_op *firstOp_condition = findFirstOp($3);
@@ -499,6 +497,7 @@ simple_command: TK_PR_WHILE '(' precedence_A ')' command_block {
 
 	firstOp_cb->label = label_cb;
 
+	/* Essa operação está sendo inserida no lugar errado */
 	iloc_op *op_jump = newILOCop (
 		NULL,
 		strdup("jumpI"),
