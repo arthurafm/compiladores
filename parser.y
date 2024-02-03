@@ -485,6 +485,44 @@ simple_command: TK_PR_WHILE '(' precedence_A ')' command_block {
 	lexem.token_value = strdup("while");
 	lexem.type = strdup($3->info.type);
 	$$ = tree_new(lexem);
+
+	char *label_while = createLabel(&labelCounter), *label_cb = createLabel(&labelCounter), *label_post = createLabel(&labelCounter);
+
+	/* label_ while deve estar apontando pro começo da precendence_A */
+
+	$$->label = label_post;
+
+	iloc_op *firstOp_condition = findFirstOp($3);
+	iloc_op *firstOp_cb = findFirstOp($5);
+
+	firstOp_condition->label = label_while;
+
+	firstOp_cb->label = label_cb;
+
+	iloc_op *op_jump = newILOCop (
+		NULL,
+		strdup("jumpI"),
+		NULL,
+		NULL,
+		label_while,
+		NULL,
+		1
+	);
+
+	tree_t *lastSC_cb = findLastProg($5);
+	lastSC_cb->prog = addOpToProg(lastSC_cb->prog, op_jump);
+
+	iloc_op *op_cbr = newILOCop (
+		NULL,
+		strdup("cbr"),
+		$3->reg,
+		NULL,
+		label_cb,
+		label_post,
+		1
+	);
+	$$->prog = addOpToProg($$->prog, op_cbr);
+
 	tree_add_child($$, $3);
 	tree_add_child($$, $5);
 	tree_add_child($$, NULL);
