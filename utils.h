@@ -190,4 +190,10 @@ iloc_op* findFirstOp (tree_t *t);
 /* Acha a última operação ILOC a ser realizada em um bloco de comando */
 tree_t* findLastProg (tree_t *t);
 
+/* Procura a main dentro da AST */
+tree_t* findMainStart (tree_t *t);
+
+/* Poda a AST mantendo somente a função no nodo raiz */
+void pruneFunction (tree_t *t);
+
 #endif //_UTILS_H_

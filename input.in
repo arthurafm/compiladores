@@ -1,5 +1,29 @@
+() >= int ! fn {
+    int c;
+    c = 1;
+}
+
+int b;
+
+() >= int ! fn1 {
+    int d;
+    d = 1;
+}
+
 () >= int ! main {
     int a;
-    a = 2;
-    return 0;
+    b = 0;
+    while (a > 10) {
+        a = a + 1;
+    };
+}
+
+() >= int ! fn2 {
+    int d;
+    d = 1;
+}
+
+() >= int ! fn3 {
+    int d;
+    d = 1;
 }

@@ -5,6 +5,7 @@
 
 extern int yylineno;
 extern void *arvore;
+extern pilha *stack;
 
 int get_line_number() {
     return yylineno;
@@ -557,8 +558,19 @@ void freeILOCprog (iloc_prog *prog) {
     }
 }
 
-void printILOC (tree_t *t) {
-    if (t != NULL) {
+short inMain = 0; // Se na main, inMain = 1, caso contrário, inMain = 0
+void printILOC (tree_t *tr) {
+    if (tr != NULL) {
+
+        tree_t *t;
+        if (inMain == 0) {
+            t = findMainStart(tr);
+            pruneFunction(t);
+        }
+        else {
+            t = tr;
+        }
+
         for (int i = 0; i < t->number_of_children; i++) {
             if (t->children[i] != NULL) {
                 if (strcmp(t->children[i]->info.token_type, strdup("comando simples")) != 0) {
@@ -690,4 +702,39 @@ tree_t* findLastProg (tree_t *t) {
         return cursor;
     }
     return NULL;
+}
+
+tree_t* findMainStart (tree_t *t) {
+    if (t != NULL) {
+        if (strcmp(t->info.token_value, strdup("main")) == 0) {
+            ht_item *id_hash_table = encontrarItemPilha(stack, t->info.token_value);
+            if (strcmp(id_hash_table->nature, strdup("function")) == 0) {
+                inMain = 1;
+                return t;
+            }
+            else {
+                return NULL;
+            }
+        }
+        else {
+            for (int i = 0; i < t->number_of_children; i++) {
+                if (findMainStart(t->children[i]) != NULL) {
+                    return findMainStart(t->children[i]);
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
+void pruneFunction (tree_t *t) {
+    if (t != NULL) {
+        ht_item *id_hash_table = encontrarItemPilha(stack, t->info.token_value);
+        if (strcmp(id_hash_table->nature, strdup("function")) == 0) {
+            if (t->number_of_children > 1) {
+                tree_free(t->children[t->number_of_children - 1]);
+                t->children[t->number_of_children - 1] = NULL;
+            }
+        }
+    }
 }

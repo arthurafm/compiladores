@@ -209,7 +209,7 @@ simple_command_list: simple_command';' {
 		last = tree_new(lexem);
 
 		iloc_op *op_nop = newILOCop (
-			$$->label,
+			strdup($$->label),
 			strdup("nop"),
 			NULL,
 			NULL,
@@ -301,10 +301,10 @@ simple_command: id '=' precedence_A {
 		iloc_op *op_store = newILOCop(
 			NULL,
 			strdup("storeAI"),
-			$3->reg,
+			strdup($3->reg),
 			NULL,
 			checkContext(stack, strdup(id_info.token_value)),
-			temp_out2,
+			strdup(temp_out2),
 			0
 		);
 
@@ -402,7 +402,7 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block {
 		strdup("jumpI"),
 		NULL,
 		NULL,
-		label_post,
+		strdup(label_post),
 		NULL,
 		1
 	);
@@ -413,10 +413,10 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block {
 	iloc_op *op_cbr = newILOCop (
 		NULL,
 		strdup("cbr"),
-		$3->reg,
+		strdup($3->reg),
 		NULL,
-		label_if,
-		label_post,
+		strdup(label_if),
+		strdup(label_post),
 		1
 	);
 	$$->prog = addOpToProg($$->prog, op_cbr);
@@ -451,7 +451,7 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_b
 		strdup("jumpI"),
 		NULL,
 		NULL,
-		label_post,
+		strdup(label_post),
 		NULL,
 		1
 	);
@@ -464,10 +464,10 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_b
 	iloc_op *op_cbr = newILOCop (
 		NULL,
 		strdup("cbr"),
-		$3->reg,
+		strdup($3->reg),
 		NULL,
-		label_if,
-		label_else,
+		strdup(label_if),
+		strdup(label_else),
 		1
 	);
 	$$->prog = addOpToProg($$->prog, op_cbr);
@@ -504,7 +504,7 @@ simple_command: TK_PR_WHILE '(' precedence_A ')' command_block {
 		strdup("jumpI"),
 		NULL,
 		NULL,
-		label_while,
+		strdup(label_while),
 		NULL,
 		1
 	);
@@ -515,10 +515,10 @@ simple_command: TK_PR_WHILE '(' precedence_A ')' command_block {
 	iloc_op *op_cbr = newILOCop (
 		NULL,
 		strdup("cbr"),
-		$3->reg,
+		strdup($3->reg),
 		NULL,
-		label_cb,
-		label_post,
+		strdup(label_cb),
+		strdup(label_post),
 		1
 	);
 	$$->prog = addOpToProg($$->prog, op_cbr);
@@ -553,7 +553,7 @@ expr: id {
 		NULL,
 		strdup("loadAI"),
 		checkContext(stack, strdup($1->info.token_value)),
-		temp_in2,
+		strdup(temp_in2),
 		createRegister(&registerCounter),
 		NULL,
 		0
@@ -577,7 +577,7 @@ expr: lit {
 	);
 
 	$$->prog = addOpToProg($$->prog, op_load);
-	$$->reg = op_load->output_1;
+	$$->reg = strdup(op_load->output_1);
 };
 expr: id'('argument_list')' {
 	lex_val id_lex = $1->info;
@@ -689,7 +689,7 @@ precedence_B: precedence_B TK_OC_AND precedence_C {
 			strdup("and"),
 			strdup($1->reg),
 			strdup($3->reg),
-			$$->reg,
+			strdup($$->reg),
 			NULL,
 			0
 		);
@@ -721,7 +721,7 @@ precedence_C: precedence_C TK_OC_EQ precedence_D {
 			strdup("cmp_EQ"),
 			strdup($1->reg),
 			strdup($3->reg),
-			$$->reg,
+			strdup($$->reg),
 			NULL,
 			1
 		);
@@ -749,7 +749,7 @@ precedence_C: precedence_C TK_OC_NE precedence_D {
 			strdup("cmp_NE"),
 			strdup($1->reg),
 			strdup($3->reg),
-			$$->reg,
+			strdup($$->reg),
 			NULL,
 			1
 		);
@@ -780,7 +780,7 @@ precedence_D: precedence_D '<' precedence_E {
 			strdup("cmp_LT"),
 			strdup($1->reg),
 			strdup($3->reg),
-			$$->reg,
+			strdup($$->reg),
 			NULL,
 			1
 		);
@@ -807,7 +807,7 @@ precedence_D: precedence_D '>' precedence_E {
 			strdup("cmp_GT"),
 			strdup($1->reg),
 			strdup($3->reg),
-			$$->reg,
+			strdup($$->reg),
 			NULL,
 			1
 		);
@@ -834,7 +834,7 @@ precedence_D: precedence_D TK_OC_LE precedence_E {
 			strdup("cmp_LE"),
 			strdup($1->reg),
 			strdup($3->reg),
-			$$->reg,
+			strdup($$->reg),
 			NULL,
 			1
 		);
@@ -861,7 +861,7 @@ precedence_D: precedence_D TK_OC_GE precedence_E {
 			strdup("cmp_GE"),
 			strdup($1->reg),
 			strdup($3->reg),
-			$$->reg,
+			strdup($$->reg),
 			NULL,
 			1
 		);
@@ -892,7 +892,7 @@ precedence_E: precedence_E '+' precedence_F {
 			strdup("add"),
 			strdup($1->reg),
 			strdup($3->reg),
-			$$->reg,
+			strdup($$->reg),
 			NULL,
 			0
 		);
@@ -919,7 +919,7 @@ precedence_E: precedence_E '-' precedence_F {
 			strdup("sub"),
 			strdup($1->reg),
 			strdup($3->reg),
-			$$->reg,
+			strdup($$->reg),
 			NULL,
 			0
 		);
@@ -950,7 +950,7 @@ precedence_F: precedence_F '*' precedence_G {
 			strdup("mult"),
 			strdup($1->reg),
 			strdup($3->reg),
-			$$->reg,
+			strdup($$->reg),
 			NULL,
 			0
 		);
@@ -977,7 +977,7 @@ precedence_F: precedence_F '/' precedence_G {
 			strdup("div"),
 			strdup($1->reg),
 			strdup($3->reg),
-			$$->reg,
+			strdup($$->reg),
 			NULL,
 			0
 		);
@@ -1019,7 +1019,7 @@ precedence_G: '-'precedence_G {
 			strdup("loadI"),
 			strdup("0"),
 			NULL,
-			reg_temp,
+			strdup(reg_temp),
 			NULL,
 			0
 		);
@@ -1033,7 +1033,7 @@ precedence_G: '-'precedence_G {
 			strdup("sub"),
 			strdup(op_load->output_1),
 			strdup($2->reg),
-			$$->reg,
+			strdup($$->reg),
 			NULL,
 			0
 		);
@@ -1061,7 +1061,7 @@ precedence_G: '!'precedence_G {
 			strdup("loadI"),
 			strdup("1"),
 			NULL,
-			reg_temp1,
+			strdup(reg_temp1),
 			NULL,
 			0
 		);
@@ -1071,9 +1071,9 @@ precedence_G: '!'precedence_G {
 		iloc_op *op_cmp = newILOCop (
 			NULL,
 			strdup("cmp_EQ"),
-			reg_temp1,
-			reg_temp1,
-			reg_temp2,
+			strdup(reg_temp1),
+			strdup(reg_temp1),
+			strdup(reg_temp2),
 			NULL,
 			1
 		);
@@ -1085,8 +1085,8 @@ precedence_G: '!'precedence_G {
 			NULL,
 			strdup("xor"),
 			strdup($2->reg),
-			reg_temp2,
-			$$->reg,
+			strdup(reg_temp2),
+			strdup($$->reg),
 			NULL,
 			0
 		);
