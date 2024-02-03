@@ -246,6 +246,8 @@ simple_command_list: simple_command';' simple_command_list {
 			}
 			else {
 				firstOp->prog->operation->label = strdup($$->label);
+				int a;
+				a = 1;
 			}
 		}
 		else {
@@ -496,7 +498,7 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_b
 
 	if (firstOp_cb2->prog->operation->label != NULL) {
 		iloc_op *op_nop = newILOCop (
-			strdup(label_if),
+			strdup(label_else),
 			strdup("nop"),
 			NULL,
 			NULL,
@@ -507,7 +509,7 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_b
 		firstOp_cb2->prog = addOpToProgBeginning(firstOp_cb2->prog, op_nop);
 	}
 	else {
-		firstOp_cb2->prog->operation->label = strdup(label_if);
+		firstOp_cb2->prog->operation->label = strdup(label_else);
 	}
 
 	iloc_op *op_jump = newILOCop (
@@ -519,6 +521,8 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_b
 		NULL,
 		1
 	);
+
+	// label_else não está sendo usado?
 
 	tree_t *lastSC_cb1 = findLastProg($5);
 	tree_t *lastSC_cb2 = findLastProg($7);
