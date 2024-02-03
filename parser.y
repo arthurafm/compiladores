@@ -180,11 +180,19 @@ open_premature_closure:	{
 /* Simple Commands */
 simple_command_list: simple_command';' {
 	$$ = $1;
+	$$->isLast = 1;
 };
 simple_command_list: simple_command';' simple_command_list {
 	if ($1 != NULL) {
 		$$ = $1;
-		tree_add_child($$, $3);
+		if ((strcmp($$->info.token_value, strdup("if")) == 0) || (strcmp($$->info.token_value, strdup("while")) == 0)) {
+			$$->children[$$->number_of_children - 1] = $3;
+			iloc_op *firstOp = findFirstOp($3);
+			firstOp->label = strdup($$->label);
+		}
+		else {
+			tree_add_child($$, $3);
+		}
 	}
 	else {
 		$$ = $3;
@@ -336,8 +344,10 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block {
 	lexem.token_value = strdup("if");
 	lexem.type = strdup($3->info.type);
 	$$ = tree_new(lexem);
+
 	tree_add_child($$, $3);
 	tree_add_child($$, $5);
+	tree_add_child($$, NULL);
 }; /* Flow Control */
 simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_block {
 	lex_val lexem;
@@ -347,23 +357,86 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_b
 	lexem.type = strdup($3->info.type);
 	$$ = tree_new(lexem);
 
-	/* Código do precedence_A tem que ocorrer antes desse cbr */
-
 	/* Seta labels nos command_block */
 
+	char *label_if = createLabel(&labelCounter), *label_else = createLabel(&labelCounter), *label_post = createLabel(&labelCounter);
+
+	/* Após command_block's, deve ter um jump para após do command_block do else */
+	$$->label = label_post;
+
+	/* Caso os blocos de comando estejam vazios, cria um novo nodo que contém só a operação de jump pro post-if */
+	if ($5 == NULL) {
+		lex_val lexem2;
+		lexem2.num_line = -1;
+		lexem2.token_type = strdup("");
+		lexem2.token_value = strdup("");
+		lexem.type = strdup("");
+		$5 = tree_new(lexem2);
+
+		iloc_op *op_nop = newILOCop (
+			NULL,
+			strdup("nop"),
+			NULL,
+			NULL,
+			label_post,
+			NULL,
+			-1
+		);
+
+		$5->prog = addOpToProg($5->prog, op_nop);
+	}
+	if ($7 == NULL) {
+		lex_val lexem2;
+		lexem2.num_line = -1;
+		lexem2.token_type = strdup("");
+		lexem2.token_value = strdup("");
+		lexem.type = strdup("");
+		$7 = tree_new(lexem2);
+
+		iloc_op *op_nop = newILOCop (
+			NULL,
+			strdup("nop"),
+			NULL,
+			NULL,
+			label_post,
+			NULL,
+			-1
+		);
+
+		$7->prog = addOpToProg($7->prog, op_nop);
+	}
+
+	/* Aplica labels nos blocos de comando relacionados ao if-else */
 	iloc_op *firstOp_cb1 = findFirstOp($5);
 	iloc_op *firstOp_cb2 = findFirstOp($7);
+	firstOp_cb1->label = label_if;
+	firstOp_cb2->label = label_else;
 
-	firstOp_cb1->label = createLabel(&labelCounter);
-	firstOp_cb2->label = createLabel(&labelCounter);
+	/* Nodo de algum lugar está sendo sobrescrito pelo último nodo */
+
+	iloc_op *op_jump = newILOCop (
+		NULL,
+		strdup("jumpI"),
+		NULL,
+		NULL,
+		label_post,
+		NULL,
+		1
+	);
+
+	tree_t *lastSC_cb1 = findLastProg($5);
+	tree_t *lastSC_cb2 = findLastProg($7);
+
+	lastSC_cb1->prog = addOpToProg(lastSC_cb1->prog, op_jump);
+	lastSC_cb2->prog= addOpToProg(lastSC_cb2->prog, op_jump);
 
 	iloc_op *op_cbr = newILOCop (
 		NULL,
 		strdup("cbr"),
 		$3->reg,
 		NULL,
-		firstOp_cb1->label,
-		firstOp_cb2->label,
+		label_if,
+		label_else,
 		1
 	);
 	$$->prog = addOpToProg($$->prog, op_cbr);
@@ -371,6 +444,8 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_b
 	tree_add_child($$, $3);
 	tree_add_child($$, $5);
 	tree_add_child($$, $7);
+	tree_add_child($$, NULL);
+
 }; /* Flow Control */
 simple_command: TK_PR_WHILE '(' precedence_A ')' command_block {
 	lex_val lexem;
@@ -381,6 +456,7 @@ simple_command: TK_PR_WHILE '(' precedence_A ')' command_block {
 	$$ = tree_new(lexem);
 	tree_add_child($$, $3);
 	tree_add_child($$, $5);
+	tree_add_child($$, NULL);
 }; /* Flow Control */
 
 /* Expressions */

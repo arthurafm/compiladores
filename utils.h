@@ -64,6 +64,8 @@ typedef struct lex_value {
 typedef struct tree {
     lex_val info;
     char *reg;
+    char *label;
+    short isLast; // Flag para saber se é o último simple_command dentro de um command_block; 0 = Não, 1 = Sim
     iloc_prog *prog;
     int number_of_children;
     struct tree **children;
@@ -184,5 +186,8 @@ char* checkContext (pilha* pilha_atual, char *key);
 
 /* Acha a primeira operação ILOC a ser realizada em um comando simples */
 iloc_op* findFirstOp (tree_t *t);
+
+/* Acha a última operação ILOC a ser realizada em um bloco de comando */
+tree_t* findLastProg (tree_t *t);
 
 #endif //_UTILS_H_

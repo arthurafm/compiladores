@@ -30,6 +30,8 @@ tree_t *tree_new(lex_val info) {
     n->info.token_value = strdup(info.token_value);
     n->info.type = strdup(info.type);
     n->reg = NULL;
+    n->isLast = 0;
+    n->label = NULL;
 
     n->prog = newILOCprog();
 
@@ -48,6 +50,7 @@ void tree_free(tree_t *tree) {
     }
     free(tree->children);
     free(tree->reg);
+    free(tree->label);
     free(tree->info.token_type);
 	free(tree->info.token_value);
     free(tree->info.type);
@@ -61,7 +64,7 @@ void tree_free(tree_t *tree) {
 }
 
 void tree_add_child(tree_t *tree, tree_t *child) {
-  if (tree != NULL && child != NULL) {
+  if (tree != NULL) {
     tree->number_of_children++;
     tree->children = realloc(tree->children, tree->number_of_children * sizeof(tree_t*));
     tree->children[tree->number_of_children-1] = child;
@@ -70,7 +73,9 @@ void tree_add_child(tree_t *tree, tree_t *child) {
 
 static void imprimirLabels(tree_t *tree) {
 	if (tree != NULL) {
-		printf("%p [label=\"%s\"]\n", (void *) tree, tree->info.token_value);
+        if (strcmp(tree->info.token_value, strdup("")) != 0) {
+            printf("%p [label=\"%s\"]\n", (void *) tree, tree->info.token_value);
+        }
 		for (int i = 0; i < tree->number_of_children; i++){
             imprimirLabels(tree->children[i]);
         }
@@ -80,7 +85,9 @@ static void imprimirLabels(tree_t *tree) {
 static void imprimirArestas(tree_t *tree) {
 	for (int i = 0; i < tree->number_of_children; i++) {
 		if (tree->children[i] != NULL) {
-			printf("%p, %p\n", (void *) tree, (void *) tree->children[i]);
+            if (strcmp(tree->children[i]->info.token_value, strdup("")) != 0) {
+                printf("%p, %p\n", (void *) tree, (void *) tree->children[i]);
+            }
 		}
   }
 
@@ -553,8 +560,10 @@ void freeILOCprog (iloc_prog *prog) {
 void printILOC (tree_t *t) {
     if (t != NULL) {
         for (int i = 0; i < t->number_of_children; i++) {
-            if (strcmp(t->children[i]->info.token_type, strdup("comando simples")) != 0) {
-                printILOC (t->children[i]);
+            if (t->children[i] != NULL) {
+                if (strcmp(t->children[i]->info.token_type, strdup("comando simples")) != 0) {
+                    printILOC (t->children[i]);
+                }
             }
         }
         if (t->prog != NULL) {
@@ -577,7 +586,7 @@ void printILOC (tree_t *t) {
                         if (cursor->operation->control_flux == 0) { // Se não for uma operação de controle de fluxo
                             printf(" => %s", cursor->operation->output_1);
                         }
-                        else { // Se for uma operação de controle de fluxo
+                        else if (cursor->operation->control_flux == 1) { // Se for uma operação de controle de fluxo
                             printf(" -> %s", cursor->operation->output_1);
                         }
                     }
@@ -592,8 +601,10 @@ void printILOC (tree_t *t) {
             }
         }
         for (int i = 0; i < t->number_of_children; i++) {
-            if (strcmp(t->children[i]->info.token_type, strdup("comando simples")) == 0) {
-                printILOC (t->children[i]);
+            if (t->children[i] != NULL) {
+                if (strcmp(t->children[i]->info.token_type, strdup("comando simples")) == 0) {
+                    printILOC (t->children[i]);
+                }
             }
         }
     }
@@ -666,6 +677,17 @@ iloc_op* findFirstOp (tree_t *t) {
                 }
             }
         }
+    }
+    return NULL;
+}
+
+tree_t* findLastProg (tree_t *t) {
+    if (t != NULL) {
+        tree_t *cursor = t;
+        while ((cursor->isLast != 1) && (cursor != NULL) && (cursor->number_of_children != 0)) {
+            cursor = cursor->children[cursor->number_of_children - 1];
+        }
+        return cursor;
     }
     return NULL;
 }
