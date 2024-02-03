@@ -658,6 +658,22 @@ iloc_prog* addOpToProg (iloc_prog *prog, iloc_op *op) {
     return prog;
 }
 
+iloc_prog* addOpToProgBeginning (iloc_prog *prog, iloc_op *op) {
+    if (prog->operation->operation == NULL) {
+        iloc_prog *n_prog = malloc(sizeof(iloc_prog));
+        n_prog->operation = op;
+        n_prog->next_op = NULL;
+        prog = n_prog;
+        return prog;
+    }
+    else {
+        iloc_prog *n_prog = malloc(sizeof(iloc_prog));
+        n_prog->operation = op;
+        n_prog->next_op = prog;
+        return n_prog;
+    }
+}
+
 char* checkContext (pilha* pilha_atual, char *key) {
     // Caso haja mais de um escopo, é local
 	int contador = pilha_atual->num_escopos;
@@ -677,11 +693,11 @@ char* checkContext (pilha* pilha_atual, char *key) {
     return NULL;
 }
 
-iloc_op* findFirstOp (tree_t *t) {
+tree_t* findFirstOp (tree_t *t) {
     if (t != NULL) {
         if (t->prog->operation->operation != NULL) {
             if (t->number_of_children == 0) {
-                return t->prog->operation;
+                return t;
             }
             for (int i = 0; i < t->number_of_children; i++) {
                 if (findFirstOp(t->children[i]) != NULL) {

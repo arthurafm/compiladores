@@ -231,8 +231,22 @@ simple_command_list: simple_command';' simple_command_list {
 		$$ = $1;
 		if ((strcmp($$->info.token_value, strdup("if")) == 0) || (strcmp($$->info.token_value, strdup("while")) == 0)) {
 			$$->children[$$->number_of_children - 1] = $3;
-			iloc_op *firstOp = findFirstOp($3);
-			firstOp->label = strdup($$->label);
+			tree_t *firstOp = findFirstOp($3);
+			if (firstOp->prog->operation->label != NULL) {
+				iloc_op *op_nop = newILOCop (
+					strdup($$->label),
+					strdup("nop"),
+					NULL,
+					NULL,
+					NULL,
+					NULL,
+					-1
+				);
+				firstOp->prog = addOpToProgBeginning(firstOp->prog, op_nop);
+			}
+			else {
+				firstOp->prog->operation->label = strdup($$->label);
+			}
 		}
 		else {
 			tree_add_child($$, $3);
@@ -393,9 +407,28 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block {
 
 	$$->label = label_post;
 
-	iloc_op *firstOp_cb = findFirstOp($5);
+	tree_t *firstOp_cb = findFirstOp($5);
 
-	firstOp_cb->label = label_if;
+	/*
+		Tá aqui o erro atual
+		O programa é atualizado aqui, mas por algum motivo, essa mudança não persiste
+		Dentro dessa expresão gramatical, o erro está acontecendo
+	 */
+	if (firstOp_cb->prog->operation->label != NULL) {
+		iloc_op *op_nop = newILOCop (
+			strdup(label_if),
+			strdup("nop"),
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			-1
+		);
+		firstOp_cb->prog = addOpToProgBeginning(firstOp_cb->prog, op_nop);
+	}
+	else {
+		firstOp_cb->prog->operation->label = strdup(label_if);
+	}
 
 	iloc_op *op_jump = newILOCop (
 		NULL,
@@ -421,6 +454,8 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block {
 	);
 	$$->prog = addOpToProg($$->prog, op_cbr);
 
+	tree_t *test_5 = $5;
+
 	tree_add_child($$, $3);
 	tree_add_child($$, $5);
 	tree_add_child($$, NULL);
@@ -440,11 +475,40 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_b
 	$$->label = label_post;
 
 	/* Aplica labels nos blocos de comando relacionados ao if-else */
-	iloc_op *firstOp_cb1 = findFirstOp($5);
-	iloc_op *firstOp_cb2 = findFirstOp($7);
+	tree_t *firstOp_cb1 = findFirstOp($5);
+	tree_t *firstOp_cb2 = findFirstOp($7);
 
-	firstOp_cb1->label = label_if;
-	firstOp_cb2->label = label_else;
+	if (firstOp_cb1->prog->operation->label != NULL) {
+		iloc_op *op_nop = newILOCop (
+			strdup(label_if),
+			strdup("nop"),
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			-1
+		);
+		firstOp_cb1->prog = addOpToProgBeginning(firstOp_cb1->prog, op_nop);
+	}
+	else {
+		firstOp_cb1->prog->operation->label = strdup(label_if);
+	}
+
+	if (firstOp_cb2->prog->operation->label != NULL) {
+		iloc_op *op_nop = newILOCop (
+			strdup(label_if),
+			strdup("nop"),
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			-1
+		);
+		firstOp_cb2->prog = addOpToProgBeginning(firstOp_cb2->prog, op_nop);
+	}
+	else {
+		firstOp_cb2->prog->operation->label = strdup(label_if);
+	}
 
 	iloc_op *op_jump = newILOCop (
 		NULL,
@@ -490,14 +554,41 @@ simple_command: TK_PR_WHILE '(' precedence_A ')' command_block {
 
 	$$->label = label_post;
 
-	iloc_op *firstOp_condition = findFirstOp($3);
-	iloc_op *firstOp_cb = findFirstOp($5);
+	tree_t *firstOp_condition = findFirstOp($3);
+	tree_t *firstOp_cb = findFirstOp($5);
 
-	firstOp_condition->label = label_while;
+	if (firstOp_condition->prog->operation->label != NULL) {
+		iloc_op *op_nop = newILOCop (
+			strdup(label_while),
+			strdup("nop"),
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			-1
+		);
+		firstOp_condition->prog = addOpToProgBeginning(firstOp_condition->prog, op_nop);
+	}
+	else {
+		firstOp_condition->prog->operation->label = strdup(label_while);
+	}
 
-	firstOp_cb->label = label_cb;
+	if (firstOp_cb->prog->operation->label != NULL) {
+		iloc_op *op_nop = newILOCop (
+			strdup(label_cb),
+			strdup("nop"),
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			-1
+		);
+		firstOp_cb->prog = addOpToProgBeginning(firstOp_cb->prog, op_nop);
+	}
+	else {
+		firstOp_cb->prog->operation->label = strdup(label_cb);
+	}
 
-	/* Essa operação está sendo inserida no lugar errado */
 	iloc_op *op_jump = newILOCop (
 		NULL,
 		strdup("jumpI"),
