@@ -158,7 +158,24 @@ command_block: '{' simple_command_list '}' {
 	$$ = $2;
 };
 command_block: '{' '}' {
-	$$ = NULL;
+	lex_val lexem;
+	lexem.num_line = get_line_number();
+	lexem.token_type = strdup("comando simples");
+	lexem.token_value = strdup("");
+	lexem.type = strdup("");
+	$$ = tree_new(lexem);
+
+	iloc_op *op_nop = newILOCop (
+		NULL,
+		strdup("nop"),
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		-1
+	);
+
+	$$->prog = addOpToProg($$->prog, op_nop);
 };
 
 open_closure: {
@@ -358,61 +375,19 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_b
 	$$ = tree_new(lexem);
 
 	/* Seta labels nos command_block */
-
 	char *label_if = createLabel(&labelCounter), *label_else = createLabel(&labelCounter), *label_post = createLabel(&labelCounter);
 
 	/* Após command_block's, deve ter um jump para após do command_block do else */
 	$$->label = label_post;
 
-	/* Caso os blocos de comando estejam vazios, cria um novo nodo que contém só a operação de jump pro post-if */
-	if ($5 == NULL) {
-		lex_val lexem2;
-		lexem2.num_line = -1;
-		lexem2.token_type = strdup("");
-		lexem2.token_value = strdup("");
-		lexem.type = strdup("");
-		$5 = tree_new(lexem2);
-
-		iloc_op *op_nop = newILOCop (
-			NULL,
-			strdup("nop"),
-			NULL,
-			NULL,
-			label_post,
-			NULL,
-			-1
-		);
-
-		$5->prog = addOpToProg($5->prog, op_nop);
-	}
-	if ($7 == NULL) {
-		lex_val lexem2;
-		lexem2.num_line = -1;
-		lexem2.token_type = strdup("");
-		lexem2.token_value = strdup("");
-		lexem.type = strdup("");
-		$7 = tree_new(lexem2);
-
-		iloc_op *op_nop = newILOCop (
-			NULL,
-			strdup("nop"),
-			NULL,
-			NULL,
-			label_post,
-			NULL,
-			-1
-		);
-
-		$7->prog = addOpToProg($7->prog, op_nop);
-	}
+	tree_t *test = $$;
 
 	/* Aplica labels nos blocos de comando relacionados ao if-else */
 	iloc_op *firstOp_cb1 = findFirstOp($5);
 	iloc_op *firstOp_cb2 = findFirstOp($7);
+
 	firstOp_cb1->label = label_if;
 	firstOp_cb2->label = label_else;
-
-	/* Nodo de algum lugar está sendo sobrescrito pelo último nodo */
 
 	iloc_op *op_jump = newILOCop (
 		NULL,
@@ -426,7 +401,6 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block TK_PR_ELSE command_b
 
 	tree_t *lastSC_cb1 = findLastProg($5);
 	tree_t *lastSC_cb2 = findLastProg($7);
-
 	lastSC_cb1->prog = addOpToProg(lastSC_cb1->prog, op_jump);
 	lastSC_cb2->prog= addOpToProg(lastSC_cb2->prog, op_jump);
 
