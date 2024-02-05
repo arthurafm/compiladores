@@ -571,51 +571,53 @@ void printILOC (tree_t *tr) {
             t = tr;
         }
 
-        for (int i = 0; i < t->number_of_children; i++) {
-            if (t->children[i] != NULL) {
-                if (strcmp(t->children[i]->info.token_type, strdup("comando simples")) != 0) {
-                    printILOC (t->children[i]);
-                }
-            }
-        }
-        if (t->prog != NULL) {
-            iloc_prog *cursor = t->prog;
-            while (cursor != NULL) {
-                if (cursor->operation != NULL) {
-                    if (cursor->operation->label != NULL) {
-                        printf("%s: ", cursor->operation->label);
-                    }
-                    if (cursor->operation->operation != NULL) {
-                        printf("%s", cursor->operation->operation);
-                    }
-                    if (cursor->operation->input_1 != NULL) {
-                        printf(" %s", cursor->operation->input_1);
-                    }
-                    if (cursor->operation->input_2 != NULL) {
-                        printf(", %s", cursor->operation->input_2);
-                    }
-                    if (cursor->operation->output_1 != NULL) {
-                        if (cursor->operation->control_flux == 0) { // Se não for uma operação de controle de fluxo
-                            printf(" => %s", cursor->operation->output_1);
-                        }
-                        else if (cursor->operation->control_flux == 1) { // Se for uma operação de controle de fluxo
-                            printf(" -> %s", cursor->operation->output_1);
-                        }
-                    }
-                    if (cursor->operation->output_2 != NULL) {
-                        printf(", %s", cursor->operation->output_2);
-                    }
-                    if (cursor->operation->operation != NULL) {
-                        printf("\n");
+        if (t != NULL) {
+            for (int i = 0; i < t->number_of_children; i++) {
+                if (t->children[i] != NULL) {
+                    if (strcmp(t->children[i]->info.token_type, strdup("comando simples")) != 0) {
+                        printILOC (t->children[i]);
                     }
                 }
-                cursor = cursor->next_op;
             }
-        }
-        for (int i = 0; i < t->number_of_children; i++) {
-            if (t->children[i] != NULL) {
-                if (strcmp(t->children[i]->info.token_type, strdup("comando simples")) == 0) {
-                    printILOC (t->children[i]);
+            if (t->prog != NULL) {
+                iloc_prog *cursor = t->prog;
+                while (cursor != NULL) {
+                    if (cursor->operation != NULL) {
+                        if (cursor->operation->label != NULL) {
+                            printf("%s: ", cursor->operation->label);
+                        }
+                        if (cursor->operation->operation != NULL) {
+                            printf("%s", cursor->operation->operation);
+                        }
+                        if (cursor->operation->input_1 != NULL) {
+                            printf(" %s", cursor->operation->input_1);
+                        }
+                        if (cursor->operation->input_2 != NULL) {
+                            printf(", %s", cursor->operation->input_2);
+                        }
+                        if (cursor->operation->output_1 != NULL) {
+                            if (cursor->operation->control_flux == 0) { // Se não for uma operação de controle de fluxo
+                                printf(" => %s", cursor->operation->output_1);
+                            }
+                            else if (cursor->operation->control_flux == 1) { // Se for uma operação de controle de fluxo
+                                printf(" -> %s", cursor->operation->output_1);
+                            }
+                        }
+                        if (cursor->operation->output_2 != NULL) {
+                            printf(", %s", cursor->operation->output_2);
+                        }
+                        if (cursor->operation->operation != NULL) {
+                            printf("\n");
+                        }
+                    }
+                    cursor = cursor->next_op;
+                }
+            }
+            for (int i = 0; i < t->number_of_children; i++) {
+                if (t->children[i] != NULL) {
+                    if (strcmp(t->children[i]->info.token_type, strdup("comando simples")) == 0) {
+                        printILOC (t->children[i]);
+                    }
                 }
             }
         }
