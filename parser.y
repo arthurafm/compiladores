@@ -312,21 +312,23 @@ simple_command: id '=' precedence_A {
 		
 		$$ = tree_new(lexem);
 
-		char *temp_out2 = malloc(sizeof(char) * 8);
-		sprintf(temp_out2, "%d", id_hash_table->offset);
-		iloc_op *op_store = newILOCop(
-			NULL,
-			strdup("storeAI"),
-			strdup($3->reg),
-			NULL,
-			checkContext(stack, strdup(id_info.token_value)),
-			strdup(temp_out2),
-			0
-		);
+		if ($3->prog != NULL) {
+			char *temp_out2 = malloc(sizeof(char) * 8);
+			sprintf(temp_out2, "%d", id_hash_table->offset);
+			iloc_op *op_store = newILOCop(
+				NULL,
+				strdup("storeAI"),
+				strdup($3->reg),
+				NULL,
+				checkContext(stack, strdup(id_info.token_value)),
+				strdup(temp_out2),
+				0
+			);
 
-		$$->prog = addOpToProg($$->prog, op_store);
-		tree_add_child($$, $1);
-		tree_add_child($$, $3);
+			$$->prog = addOpToProg($$->prog, op_store);
+			tree_add_child($$, $1);
+			tree_add_child($$, $3);
+		}
 	}
 }; /* Attribution */
 simple_command: id'('argument_list')' {
@@ -695,6 +697,7 @@ expr: id'('argument_list')' {
 			$$ = tree_new(lexem);
 			free(tkn_value);
 			tree_add_child($$, $3);
+			$$->prog = NULL;
 		}
 		else {
 			/* Erro -> Identificador não é função */
@@ -724,6 +727,7 @@ expr: id'('')' {
 			lexem.type = strdup(id_lex.type);
 			$$ = tree_new(lexem);
 			free(tkn_value);
+			$$->prog = NULL;
 		}
 		else {
 			/* Erro -> Identificador não é função */
