@@ -232,7 +232,25 @@ simple_command_list: simple_command';' simple_command_list {
 		if ((strcmp($$->info.token_value, strdup("if")) == 0) || (strcmp($$->info.token_value, strdup("while")) == 0)) {
 			$$->children[$$->number_of_children - 1] = $3;
 			tree_t *firstOp = findFirstOp($3);
-			if (firstOp->prog->operation->label != NULL) {
+			if (firstOp != NULL) {
+				if (firstOp->prog->operation->label != NULL) {
+					iloc_op *op_nop = newILOCop (
+						strdup($$->label),
+						strdup("nop"),
+						NULL,
+						NULL,
+						NULL,
+						NULL,
+						-1
+					);
+					firstOp->prog = addOpToProgBeginning(firstOp->prog, op_nop);
+				}
+				else {
+					firstOp->prog->operation->label = strdup($$->label);
+				}
+			}
+			else {
+				tree_t *lastOp = findLastProg($$);
 				iloc_op *op_nop = newILOCop (
 					strdup($$->label),
 					strdup("nop"),
@@ -242,12 +260,7 @@ simple_command_list: simple_command';' simple_command_list {
 					NULL,
 					-1
 				);
-				firstOp->prog = addOpToProgBeginning(firstOp->prog, op_nop);
-			}
-			else {
-				firstOp->prog->operation->label = strdup($$->label);
-				int a;
-				a = 1;
+				lastOp->prog = addOpToProg(lastOp->prog, op_nop);
 			}
 		}
 		else {
@@ -412,12 +425,7 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block {
 	$$->label = label_post;
 
 	tree_t *firstOp_cb = findFirstOp($5);
-
-	/*
-		Tá aqui o erro atual
-		O programa é atualizado aqui, mas por algum motivo, essa mudança não persiste
-		Dentro dessa expresão gramatical, o erro está acontecendo
-	 */
+ 
 	if (firstOp_cb->prog->operation->label != NULL) {
 		iloc_op *op_nop = newILOCop (
 			strdup(label_if),
@@ -446,6 +454,8 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block {
 
 	tree_t *lastSC_cb = findLastProg($5);
 	lastSC_cb->prog = addOpToProg(lastSC_cb->prog, op_jump);
+
+	tree_t *teste = $3;
 
 	iloc_op *op_cbr = newILOCop (
 		NULL,
@@ -751,6 +761,7 @@ precedence_A: precedence_A TK_OC_OR precedence_B {
 
 	if (($1->reg != NULL) && ($3->reg != NULL)) { // Resultados estão em registradores
 
+		$$->reg = createRegister(&registerCounter);
 		iloc_op *op_or = newILOCop (
 			NULL,
 			strdup("or"),

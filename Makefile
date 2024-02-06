@@ -10,4 +10,4 @@ etapa5: lex.yy.c main.c parser.tab.c
 	@(gcc -o etapa5 -g main.c lex.yy.c parser.tab.c utils.c)
 
 clean:
-	rm -f lex.yy.c parser.tab.c parser.tab.h
+	rm -f lex.yy.c parser.tab.c parser.tab.h etapa5
