@@ -767,7 +767,7 @@ precedence_A: precedence_A TK_OC_OR precedence_B {
 			strdup("or"),
 			strdup($1->reg),
 			strdup($3->reg),
-			createRegister(&registerCounter),
+			strdup($$->reg),
 			NULL,
 			0
 		);
