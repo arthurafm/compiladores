@@ -498,6 +498,8 @@ char *inferencia_tipos(char *tipo1, char *tipo2){
 	return retorno;
 }
 
+/* --- Geração de código intermediário --- */
+
 iloc_op* newILOCop (char *label,
                     char *operation,
                     char *input_1,
@@ -755,6 +757,54 @@ void pruneFunction (tree_t *t) {
             if (t->number_of_children > 1) {
                 tree_free(t->children[t->number_of_children - 1]);
                 t->children[t->number_of_children - 1] = NULL;
+            }
+        }
+    }
+}
+
+/* --- Geração de código assembly --- */
+
+void generateAsm (tree_t *tr) {
+
+    printf("\t.text\n");
+    
+    /* Gerar segmento de dados */
+    printAsmDataSegment(stack);
+
+    /* Gerar segmento de código */
+    // printAsm(tr);
+}
+
+void printAsm (tree_t *tr) {
+    if (tr != NULL) {
+        tree_t *t;
+        if (inMain == 0) {
+            t = findMainStart(tr);
+            pruneFunction(t);
+        }
+        else {
+            t = tr;
+        }
+
+        if (t != NULL) {
+
+        }
+    }
+}
+
+void printAsmDataSegment (pilha *stack) {
+    /* Retirada da hash table de escopo global */
+    hash_table *ht = stack->escopos[0];
+    /* Varredura em todos os itens */
+    for (int i = 0; i < ht->size; i++) {
+        if (ht->items[i] != NULL) {
+            if (strcmp(ht->items[i]->nature, strdup("function")) != 0) {
+                printf("\t.globl %s\n", ht->items[i]->key);
+                printf("\t.align 4\n");
+                printf("\t.type %s, @object\n", ht->items[i]->key);
+                printf("\t.size %s, 4\n", ht->items[i]->key);
+                printf("%s:\n", ht->items[i]->key);
+                printf("\t.zero 4\n");
             }
         }
     }

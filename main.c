@@ -16,7 +16,8 @@ int main (int argc, char **argv)
   stack = criarPilha();
   int ret = yyparse();
   // exporta (arvore);
-  printILOC(arvore);
+  // printILOC(arvore);
+  generateAsm(arvore);
   yylex_destroy();
   return ret;
 }

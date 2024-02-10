@@ -199,4 +199,13 @@ tree_t* findMainStart (tree_t *t);
 /* Poda a AST mantendo somente a função no nodo raiz */
 void pruneFunction (tree_t *t);
 
+/* Gera código assembly */
+void generateAsm (tree_t *t);
+
+/* Printa programa assembly */
+void printAsm (tree_t *t);
+
+/* Printa segmento de dados em assembly */
+void printAsmDataSegment (pilha *stack);
+
 #endif //_UTILS_H_
