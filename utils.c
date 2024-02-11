@@ -1195,9 +1195,13 @@ short isLastBinaryOp (tree_t *t) {
 void printVarInClosure (tree_t *tr) {
     /* O nodo referencia a variável/literal em si */
     if (strcmp(tr->info.token_type, strdup("identificador")) == 0) {
+        iloc_prog *cursor = tr->prog;
+        while (strcmp(cursor->operation->operation, strdup("loadAI")) != 0) {
+            cursor = cursor->next_op;
+        }
         /* Variável é local */
-        if (strcmp(tr->prog->operation->input_1, strdup("rfp")) == 0) {
-            printf("-%d(%%rbp)", 4*(atoi(tr->prog->operation->input_2) + 1));
+        if (strcmp(cursor->operation->input_1, strdup("rfp")) == 0) {
+            printf("-%d(%%rbp)", 4*(atoi(cursor->operation->input_2) + 1));
         }
         else {
             /* Variável é global */
