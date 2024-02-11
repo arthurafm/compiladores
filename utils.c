@@ -849,7 +849,6 @@ void printAsmCodeSegment (tree_t *tr) {
                             printf(".%s:\n", cursor->operation->label);
                         }
                         if (cursor->operation->operation != NULL) {
-
                             /* Atribuição */
                             if (strcmp(cursor->operation->operation, strdup("storeAI")) == 0) {
                                 /* Caso seja uma atribuição direta */
@@ -893,13 +892,19 @@ void printAsmCodeSegment (tree_t *tr) {
                             /* Retorno */
                             // Já funciona para expressões, uma vez que %eax é o registrador de retorno e também o padrão das operações
                             if (strcmp(cursor->operation->operation, strdup("ret")) == 0) {
-                                printf("\tmovl ");
-                                printVarInClosure(tr->children[0]);
-                                printf(", %%eax\n");
+                                if (strcmp(tr->children[0]->info.token_type, strdup("operador")) != 0) {
+                                    printf("\tmovl ");
+                                    printVarInClosure(tr->children[0]);
+                                    printf(", %%eax\n");
+                                }
                             }
 
                             /* Controle de fluxo */
-                            
+
+                            /* Jumps incondicionais em ILOC são transcritos diretamente */
+                            // if () {
+
+                            // }
 
                         }
 
@@ -1006,7 +1011,7 @@ char* whichRegister (int depth) {
 }
 
 short isArithmeticOp (tree_t *t) {
-    if (strcmp(t->info.token_value, strdup("operador")) == 0) {
+    if (strcmp(t->info.token_type, strdup("operador")) == 0) {
         if (strcmp(t->info.token_value, strdup("+")) == 0) {
             return 0;
         }
