@@ -833,6 +833,10 @@ short negateOperations = 0;
 /* 0 = gera o bif, 1 = pega do nodo */
 short setJumpTo = 0;
 
+/* Variável para saber se contexto mais próximo é um if, while, ou nenhum */
+/* 0 = nenhum, 1 = if, 2 = while */
+short closestContext = 0;
+
 void printAsmCodeSegment (tree_t *tr) {
     if (tr != NULL) {
 
@@ -849,104 +853,160 @@ void printAsmCodeSegment (tree_t *tr) {
             }
             else if (isArithmeticOp(tr) == 1) {
                 /* Trabalhado apenas para o if por enquanto */
-                if (strcmp(tr->info.token_value, strdup("&")) == 0) {
-                    /* Operações só são concatenadas */
-                    tr->children[0]->jumpTo = strdup(tr->jumpTo);
-                    tr->children[1]->jumpTo = strdup(tr->jumpTo);
-                    printAsmCodeSegment(tr->children[0]);
-                    printAsmCodeSegment(tr->children[1]);
-                }
-                else if (strcmp(tr->info.token_value, strdup("|")) == 0) {
-                    /* Operações devem ser invertidas, exceto a última */
-                    /* Todos os jumps, exceto o último, também deve ser alterados para o bloco de bif */
-                    if (negateOperations == 0) {
-                        negateOperations = 1;
-
-                        char *labeltoJumpTo;
-                        if (setJumpTo == 0) {
-                            char *buffer1 = strdup(tr->jumpTo);
-                            char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
-                            strncpy(buffer2, buffer1 + 1, strlen(buffer1));
-                            buffer2[strlen(buffer1) - 1] = '\0';
-                            int labelValue = atoi(buffer2) - 1;
-                            
-                            labeltoJumpTo = malloc(sizeof(char) * 8);
-                            sprintf(labeltoJumpTo, "L%d", labelValue);
-                            setJumpTo = 1;
-                        }
-                        else {
-                            labeltoJumpTo = strdup(tr->jumpTo);
-                        }
-                        tr->children[0]->jumpTo = strdup(labeltoJumpTo);
-                        tr->children[1]->jumpTo = strdup(labeltoJumpTo);
+                /* Se contexto mais próximo é um if */
+                if (closestContext == 1) { 
+                    /* Em if's */
+                    /* Quando é &, as operações só se concatenam */
+                    if (strcmp(tr->info.token_value, strdup("&")) == 0) {
+                        tr->children[0]->jumpTo = strdup(tr->jumpTo);
+                        tr->children[1]->jumpTo = strdup(tr->jumpTo);
                         printAsmCodeSegment(tr->children[0]);
-                        /* Se o filho da direita, último a ser processado, tiver algum operando final */
-                        if (isLastBinaryOp(tr->children[1]) != 2) {
-                            char *buffer1 = strdup(tr->jumpTo);
-                            char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
-                            strncpy(buffer2, buffer1 + 1, strlen(buffer1));
-                            buffer2[strlen(buffer1) - 1] = '\0';
-                            int labelValue = atoi(buffer2) + 1;
-                            char *buffer = malloc(sizeof(char) * 8);
-                            sprintf(buffer, "L%d", labelValue);
-                            tr->children[1]->jumpTo = strdup(buffer);
-                            negateOperations = 0;
-                            printAsmCodeSegment(tr->children[1]);
-                            setJumpTo = 0;
+                        printAsmCodeSegment(tr->children[1]);
+                    }
+                    /* Quando é |, as operações são invertidas (condizentes com o sinal), apenas a última se mantém */
+                    else if (strcmp(tr->info.token_value, strdup("|")) == 0) {
+                        /* Todos os jumps, exceto o último, também deve ser alterados para o bloco de bif */
+                        if (negateOperations == 0) {
+                            negateOperations = 1;
+
+                            char *labeltoJumpTo;
+                            if (setJumpTo == 0) {
+                                char *buffer1 = strdup(tr->jumpTo);
+                                char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
+                                strncpy(buffer2, buffer1 + 1, strlen(buffer1));
+                                buffer2[strlen(buffer1) - 1] = '\0';
+                                int labelValue = atoi(buffer2) - 1;
+                                
+                                labeltoJumpTo = malloc(sizeof(char) * 8);
+                                sprintf(labeltoJumpTo, "L%d", labelValue);
+                                setJumpTo = 1;
+                            }
+                            else {
+                                labeltoJumpTo = strdup(tr->jumpTo);
+                            }
+                            tr->children[0]->jumpTo = strdup(labeltoJumpTo);
+                            tr->children[1]->jumpTo = strdup(labeltoJumpTo);
+                            printAsmCodeSegment(tr->children[0]);
+                            /* Se o filho da direita, último a ser processado, tiver algum operando final */
+                            if (isLastBinaryOp(tr->children[1]) != 2) {
+                                char *buffer1 = strdup(tr->jumpTo);
+                                char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
+                                strncpy(buffer2, buffer1 + 1, strlen(buffer1));
+                                buffer2[strlen(buffer1) - 1] = '\0';
+                                char *jumpToOp1 = strdup(tr->children[0]->jumpTo);
+                                char *jumpToNode = strdup(tr->jumpTo);
+                                int labelValue = atoi(buffer2);
+                                if (strcmp(jumpToOp1, jumpToNode) == 0) {
+                                    labelValue += 1;
+                                }
+                                char *buffer = malloc(sizeof(char) * 8);
+                                sprintf(buffer, "L%d", labelValue);
+                                tr->children[1]->jumpTo = strdup(buffer);
+                                negateOperations = 0;
+                                printAsmCodeSegment(tr->children[1]);
+                                setJumpTo = 0;
+                            }
+                            else {
+                                negateOperations = 0;
+                                printAsmCodeSegment(tr->children[1]);
+                            }
+                            
                         }
                         else {
-                            negateOperations = 0;
-                            printAsmCodeSegment(tr->children[1]);
+                            char *labeltoJumpTo = strdup(tr->jumpTo);
+                            for (int i = 0; i < tr->number_of_children; i++) {
+                                if (tr->children[i] != NULL) {
+                                    tr->children[i]->jumpTo = strdup(labeltoJumpTo);
+                                    printAsmCodeSegment(tr->children[i]);
+                                }
+                            }
                         }
-                        
                     }
-                    else {
-                        char *labeltoJumpTo = strdup(tr->jumpTo);
-                        for (int i = 0; i < tr->number_of_children; i++) {
-                            if (tr->children[i] != NULL) {
-                                tr->children[i]->jumpTo = strdup(labeltoJumpTo);
-                                printAsmCodeSegment(tr->children[i]);
+                }
+                /* Se contexto mais próximo é um while */
+                else if (closestContext == 2) {
+                    /* Em while's */
+                    /* Quando é |, as operações são invertidas e se concatenam */
+                    if (strcmp(tr->info.token_value, strdup("|")) == 0) {
+                        /* Operações só são concatenadas */
+                        tr->children[0]->jumpTo = strdup(tr->jumpTo);
+                        tr->children[1]->jumpTo = strdup(tr->jumpTo);
+                        printAsmCodeSegment(tr->children[0]);
+                        printAsmCodeSegment(tr->children[1]);
+                    }
+                    /* Quando é &, as operações são invertidas (condizentes com o sinal), apenas a última se mantém */
+                    else if (strcmp(tr->info.token_value, strdup("&")) == 0) {
+                        /* Todos os jumps, exceto o último, também deve ser alterados para o bloco de post */
+                        if (negateOperations == 1) {
+                            negateOperations = 0;
+
+                            char *labeltoJumpTo;
+                            if (setJumpTo == 0) {
+                                char *buffer1 = strdup(tr->jumpTo);
+                                char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
+                                strncpy(buffer2, buffer1 + 1, strlen(buffer1));
+                                buffer2[strlen(buffer1) - 1] = '\0';
+                                int labelValue = atoi(buffer2) + 1;
+                                
+                                labeltoJumpTo = malloc(sizeof(char) * 8);
+                                sprintf(labeltoJumpTo, "L%d", labelValue);
+                                setJumpTo = 1;
+                            }
+                            else {
+                                labeltoJumpTo = strdup(tr->jumpTo);
+                            }
+                            tr->children[0]->jumpTo = strdup(labeltoJumpTo);
+                            tr->children[1]->jumpTo = strdup(labeltoJumpTo);
+                            printAsmCodeSegment(tr->children[0]);
+                            /* Se o filho da direita, último a ser processado, tiver algum operando final */
+                            if (isLastBinaryOp(tr->children[1]) != 2) {
+                                char *buffer1 = strdup(tr->jumpTo);
+                                char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
+                                strncpy(buffer2, buffer1 + 1, strlen(buffer1));
+                                buffer2[strlen(buffer1) - 1] = '\0';
+                                char *jumpToOp1 = strdup(tr->children[0]->jumpTo);
+                                char *jumpToNode = strdup(tr->jumpTo);
+                                int labelValue = atoi(buffer2);
+                                if (strcmp(jumpToOp1, jumpToNode) == 0) {
+                                    labelValue -= 1;
+                                }
+                                char *buffer = malloc(sizeof(char) * 8);
+                                sprintf(buffer, "L%d", labelValue);
+                                tr->children[1]->jumpTo = strdup(buffer);
+                                negateOperations = 1;
+                                printAsmCodeSegment(tr->children[1]);
+                                setJumpTo = 0;
+                            }
+                            else {
+                                negateOperations = 1;
+                                printAsmCodeSegment(tr->children[1]);
+                            }
+                            
+                        }
+                        else {
+                            char *labeltoJumpTo = strdup(tr->jumpTo);
+                            for (int i = 0; i < tr->number_of_children; i++) {
+                                if (tr->children[i] != NULL) {
+                                    tr->children[i]->jumpTo = strdup(labeltoJumpTo);
+                                    printAsmCodeSegment(tr->children[i]);
+                                }
                             }
                         }
                     }
                 }
             }
         }
+        /* Controle de fluxo */
         /* Caso seja um if/if-else */
         else if (strcmp(tr->info.token_value, strdup("if")) == 0) {
-            /* Controle de fluxo */
-
-            /*
-            Estrutura de if-else:
-            movl <op1>, <reg1>
-            movl <op2>, <reg2>
-            cmpl <reg1>, <reg2>
-            <op-rel> .<label1>
-            <codigo if>
-            jmp .<label2>
-            .<label1>
-            <codigo else>
-            .<label2>
-            <codigo post>
-            */
-            /* Jumps incondicionais em ILOC são transcritos diretamente */
-
-            /* Em if's */
-            /* Quando é &, as operações só se concatenam */
-            /* Quando é |, as operações são invertidas (condizentes com o sinal), apenas a última se mantém */
-
-            /* Em while's */
-            /* Quando é &, as operações são invertidas (condizentes com o sinal), apenas a última se mantém */
-            /* Quando é |, as operações são invertidas e se concatenam */
-
-            /* Label do post-if está no nodo do if */
-            /* Label do bif/belse está na primeira operação */
+            short buffer = closestContext;
             isInLogicalExp = 1;
 
             char* label_bif = findLabelinBlock(tr->children[1]);
             char* label_belse = findLabelinBlock(tr->children[2]);
             char* label_post = strdup(tr->label);
 
+            closestContext = 1; // Seta que contexto mais próximo é um if
             /* Caso seja um if simples */
             if (tr->number_of_children <= 3) {
                 tr->children[0]->jumpTo = strdup(label_post);
@@ -965,9 +1025,37 @@ void printAsmCodeSegment (tree_t *tr) {
                 printAsmCodeSegment(tr->children[2]);
                 printAsmCodeSegment(tr->children[3]);
             }
+            closestContext = buffer;
         }
+        /* Caso seja um while */
         else if (strcmp(tr->info.token_value, strdup("while")) == 0) {
+            /*
+            Estrutura de um while
+            jmp .<label-teste>
+            .<label-command_block>:
+            <codigo while>
+            .<label-teste>:
+            <codigo teste>
+            cmpl <reg1>, <reg2>
+            <op-rel> .<label-command_block>
+            */
+           /* Jumps tem que ser condizentes */
+            short buffer = closestContext;
+            isInLogicalExp = 1;
 
+            char* label_test = findLabelinBlock(tr->children[0]);
+            char* label_cb = findLabelinBlock(tr->children[1]);
+            char* label_post = strdup(tr->label);
+
+            closestContext = 2; // Seta que contexto mais próximo é um while
+            printf("\tjmp .%s\n", label_test);
+            printAsmCodeSegment(tr->children[1]);
+            negateOperations = 1;
+            tr->children[0]->jumpTo = strdup(label_cb);
+            printAsmCodeSegment(tr->children[0]);
+            negateOperations = 0;
+            printAsmCodeSegment(tr->children[2]);
+            closestContext = buffer;
         }
         else {
             /* Organiza ordem de operações */
