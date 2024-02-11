@@ -873,7 +873,7 @@ void printAsmCodeSegment (tree_t *tr) {
             char* label_bif = findLabelinBlock(tr->children[1]);
             char* label_belse = findLabelinBlock(tr->children[2]);
             char* label_post = strdup(tr->label);
-            
+
             /* Caso seja um if simples */
             if (tr->number_of_children <= 3) {
                 tr->children[0]->jumpTo = strdup(label_post);
@@ -964,15 +964,24 @@ void printAsmCodeSegment (tree_t *tr) {
                                         printf("\tmovl ");
                                         printVarInClosure(tr->children[1]);
                                         printf(", %%eax\n");
-                                        /* Compara os registradores */
-                                        printf("\tcmpl %%eax, %%edx\n");
-                                        /* Faz o pulo */
-                                        printRelationalOp(tr, 0);
-                                        printf(" .%s\n", tr->jumpTo);
                                     }
                                     else if (isLastBinaryOp(tr) == 1) {
-
+                                        /* Assume que o operando não final está em eax */
+                                        if (strcmp(tr->children[0]->info.token_type, strdup("operador")) != 0) { // Se for o primeiro filho que é o operando final
+                                            printf("\tmovl ");
+                                            printVarInClosure(tr->children[0]);
+                                        }
+                                        else {
+                                            printf("\tmovl ");
+                                            printVarInClosure(tr->children[1]);
+                                        }
+                                        printf(", %%edx\n");
                                     }
+                                    /* Compara os registradores */
+                                    printf("\tcmpl %%eax, %%edx\n");
+                                    /* Faz o pulo */
+                                    printRelationalOp(tr, 0);
+                                    printf(" .%s\n", tr->jumpTo);
                                 }
                             }
                             
