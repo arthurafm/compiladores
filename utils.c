@@ -890,9 +890,15 @@ void printAsmCodeSegment (tree_t *tr) {
                             char *buffer = malloc(sizeof(char) * 8);
                             sprintf(buffer, "L%d", labelValue);
                             tr->children[1]->jumpTo = strdup(buffer);
+                            negateOperations = 0;
+                            printAsmCodeSegment(tr->children[1]);
+                            setJumpTo = 0;
                         }
-                        negateOperations = 0;
-                        printAsmCodeSegment(tr->children[1]);
+                        else {
+                            negateOperations = 0;
+                            printAsmCodeSegment(tr->children[1]);
+                        }
+                        
                     }
                     else {
                         char *labeltoJumpTo = strdup(tr->jumpTo);
