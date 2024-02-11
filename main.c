@@ -15,8 +15,6 @@ int main (int argc, char **argv)
 	yy_flex_debug = 1;
   stack = criarPilha();
   int ret = yyparse();
-  // exporta (arvore);
-  // printILOC(arvore);
   generateAsm(arvore);
   yylex_destroy();
   return ret;
