@@ -1095,22 +1095,85 @@ void printAsmCodeSegment (tree_t *tr) {
                                     printVarInClosure(tr->children[0]);
                                     printf(", %%eax\n");
                                     /* Opera sobre o segundo */
-                                    printArithmeticOp(tr);
-                                    printf(" ");
-                                    printVarInClosure(tr->children[1]);
-                                    printf(", %%eax\n");
+                                    if (strcmp(tr->info.token_value, strdup("/")) != 0) {
+                                        printArithmeticOp(tr);
+                                        printf(" ");
+                                        printVarInClosure(tr->children[1]);
+                                        printf(", %%eax\n");
+                                    }
+                                    else {
+                                        /* Se for divisão, checa se operador é literal */
+                                        /* idivl não funciona sob literais */
+                                        if (strcmp(tr->children[1]->info.token_type, strdup("literal")) == 0) {
+                                            char *reg = whichRegister(isInComplexExp + 1);
+                                            printf("\tmovl ");
+                                            printVarInClosure(tr->children[1]);
+                                            printf(", %%%s\n", reg);
+                                            printArithmeticOp(tr);
+                                            printf(" %%%s\n", reg);
+                                        }
+                                        else {
+                                            printArithmeticOp(tr);
+                                            printf(" ");
+                                            printVarInClosure(tr->children[1]);
+                                            printf("\n");
+                                        }
+                                    }
                                 }
                                 else if (isLastBinaryOp(tr) == 1) { // Caso um operando seja final
                                     /* Opera sobre %eax */
-                                    printArithmeticOp(tr);
-                                    printf(" ");
                                     if (strcmp(tr->children[0]->info.token_type, strdup("operador")) != 0) { // Se for o primeiro filho que é o operando final
-                                        printVarInClosure(tr->children[0]);
+                                        if (strcmp(tr->info.token_value, strdup("/")) != 0) {
+                                            printArithmeticOp(tr);
+                                            printf(" ");
+                                            printVarInClosure(tr->children[0]);
+                                            printf(", %%eax\n");
+                                        }
+                                        else {
+                                            /* Se for divisão, checa se operador é literal */
+                                            /* idivl não funciona sob literais */
+                                            if (strcmp(tr->children[0]->info.token_type, strdup("literal")) == 0) {
+                                                char *reg = whichRegister(isInComplexExp + 1);
+                                                printf("\tmovl ");
+                                                printVarInClosure(tr->children[0]);
+                                                printf(", %%%s\n", reg);
+                                                printArithmeticOp(tr);
+                                                printf(" %%%s\n", reg);
+                                            }
+                                            else {
+                                                printArithmeticOp(tr);
+                                                printf(" ");
+                                                printVarInClosure(tr->children[0]);
+                                                printf("\n");
+                                            }
+                                        }
                                     }
                                     else {
-                                        printVarInClosure(tr->children[1]);
+                                        if (strcmp(tr->info.token_value, strdup("/")) != 0) {
+                                            printArithmeticOp(tr);
+                                            printf(" ");
+                                            printVarInClosure(tr->children[1]);
+                                            printf(", %%eax\n");
+                                        }
+                                        else {
+                                            /* Se for divisão, checa se operador é literal */
+                                            /* idivl não funciona sob literais */
+                                            if (strcmp(tr->children[1]->info.token_type, strdup("literal")) == 0) {
+                                                char *reg = whichRegister(isInComplexExp + 1);
+                                                printf("\tmovl ");
+                                                printVarInClosure(tr->children[1]);
+                                                printf(", %%%s\n", reg);
+                                                printArithmeticOp(tr);
+                                                printf(" %%%s\n", reg);
+                                            }
+                                            else {
+                                                printArithmeticOp(tr);
+                                                printf(" ");
+                                                printVarInClosure(tr->children[1]);
+                                                printf("\n");
+                                            }
+                                        }
                                     }
-                                    printf(", %%eax\n");
                                 }
                             }
                             /* Operações relacionais */
