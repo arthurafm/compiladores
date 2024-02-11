@@ -202,10 +202,27 @@ void pruneFunction (tree_t *t);
 /* Gera código assembly */
 void generateAsm (tree_t *t);
 
-/* Printa programa assembly */
-void printAsm (tree_t *t);
-
 /* Printa segmento de dados em assembly */
 void printAsmDataSegment (pilha *stack);
+
+/* Printa segmento de código em assembly */
+void printAsmCodeSegment (tree_t *t);
+
+/* Checa se o nodo atual da AST é a última de uma operação binária */
+/* 0 = é op-bin final; 1 = é op-bin, com 1 operando final; 2 = op-bin sem nenhum operando final; 3 = não é op-bin */
+short isLastBinaryOp (tree_t *t);
+
+/* Printa a variável em assembly no seu closure */
+void printVarInClosure (tree_t *tr);
+
+/* Printa a operação aritmética a ser feita em assembly */
+void printArithmeticOp (tree_t *t);
+
+/* Decide qual registrador vai ser utilizado como buffer */
+char* whichRegister (int depth);
+
+/* Checa se o nodo atual representa uma operação aritmética */
+/* 0 = é arimética, 1 = é operação relacional, 2 =  */
+short isArithmeticOp (tree_t *t);
 
 #endif //_UTILS_H_

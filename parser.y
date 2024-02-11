@@ -138,12 +138,6 @@ function_header: open_premature_closure param_list_parenthesis TK_OC_GE type'!' 
 	$6->info.type = strdup(id_type);
 	addItemEscopoOfsset(stack, 1, id_info.token_value, id_info.num_line, strdup("function"), strdup(id_type));
 	$$ = $6;
-	// if(strcmp(id_info.token_value, "main") == 0){
-	// 	printf("era a main\n");
-	// }
-	// else{
-	// 	printf("nao era a main\n");
-	// }
 	free(id_type);
 };
 
@@ -411,6 +405,20 @@ simple_command: TK_PR_RETURN precedence_A {
 	lexem.type = strdup($2->info.type);
 	$$ = tree_new(lexem);
 	tree_add_child($$, $2);
+
+	$$->reg = createRegister(&registerCounter);
+	iloc_op *op_ret = newILOCop (
+		NULL,
+		strdup("ret"),
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		0
+	);
+
+	$$->prog = addOpToProg($$->prog, op_ret);
+
 }; /* Return command */
 simple_command: TK_PR_IF '(' precedence_A ')' command_block {
 	lex_val lexem;
@@ -455,8 +463,6 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block {
 	tree_t *lastSC_cb = findLastProg($5);
 	lastSC_cb->prog = addOpToProg(lastSC_cb->prog, op_jump);
 
-	tree_t *teste = $3;
-
 	iloc_op *op_cbr = newILOCop (
 		NULL,
 		strdup("cbr"),
@@ -467,8 +473,6 @@ simple_command: TK_PR_IF '(' precedence_A ')' command_block {
 		1
 	);
 	$$->prog = addOpToProg($$->prog, op_cbr);
-
-	tree_t *test_5 = $5;
 
 	tree_add_child($$, $3);
 	tree_add_child($$, $5);

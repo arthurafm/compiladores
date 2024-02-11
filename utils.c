@@ -766,18 +766,17 @@ void pruneFunction (tree_t *t) {
 
 void generateAsm (tree_t *tr) {
 
-    printf("\t.text\n");
+    printf("\t.data\n");
     
     /* Gerar segmento de dados */
+
     printAsmDataSegment(stack);
 
     /* Gerar segmento de código */
-    // printAsm(tr);
-}
+    tree_t *t;
 
-void printAsm (tree_t *tr) {
     if (tr != NULL) {
-        tree_t *t;
+        /* Isolando a main */
         if (inMain == 0) {
             t = findMainStart(tr);
             pruneFunction(t);
@@ -787,8 +786,20 @@ void printAsm (tree_t *tr) {
         }
 
         if (t != NULL) {
+            /* Declaração da main */
+            printf("\t.text\n");
+            printf("\t.globl main\n");
+            printf("main:\n");
+            printf(".LFB0:\n");
+            printf("\tpush %%rbp\n");
+            printf("\tmovq %%rsp, %%rbp\n");
+            
+            printAsmCodeSegment(t);
 
+            printf("\tpopq %%rbp\n");
+            printf("\tret\n");
         }
+        printf("\n");
     }
 }
 
@@ -799,13 +810,220 @@ void printAsmDataSegment (pilha *stack) {
     for (int i = 0; i < ht->size; i++) {
         if (ht->items[i] != NULL) {
             if (strcmp(ht->items[i]->nature, strdup("function")) != 0) {
-                printf("\t.globl %s\n", ht->items[i]->key);
-                printf("\t.align 4\n");
-                printf("\t.type %s, @object\n", ht->items[i]->key);
-                printf("\t.size %s, 4\n", ht->items[i]->key);
                 printf("%s:\n", ht->items[i]->key);
                 printf("\t.zero 4\n");
             }
         }
+    }
+}
+
+/* Variável para saber se está dentro de uma expressão complexa */
+short isInComplexExp = 0;
+void printAsmCodeSegment (tree_t *tr) {
+    if (tr != NULL) {
+
+        if (isLastBinaryOp(tr) == 2) { // Caso exista parenteses na expressão -- limitado a 5 níveis de profundidade
+           printAsmCodeSegment(tr->children[0]);
+           isInComplexExp++;
+           char* reg = whichRegister(isInComplexExp);
+           printf("\tmovl %%eax, %%%s\n", reg);
+           printAsmCodeSegment(tr->children[1]);
+           printArithmeticOp(tr);
+           printf(" %%%s, %%eax\n", reg);
+           isInComplexExp--;
+        }
+        else {
+            /* Organiza ordem de operações */
+            for (int i = 0; i < tr->number_of_children; i++) {
+                if (tr->children[i] != NULL) {
+                    if (strcmp(tr->children[i]->info.token_type, strdup("comando simples")) != 0) {
+                        printAsmCodeSegment (tr->children[i]);
+                    }
+                }
+            }
+            if (tr->prog != NULL) {
+                iloc_prog *cursor = tr->prog;
+                while (cursor != NULL) {
+                    if (cursor->operation != NULL) {
+                        if (cursor->operation->label != NULL) {
+                            printf(".%s:\n", cursor->operation->label);
+                        }
+                        if (cursor->operation->operation != NULL) {
+
+                            /* Atribuição */
+                            if (strcmp(cursor->operation->operation, strdup("storeAI")) == 0) {
+                                /* Caso seja uma atribuição direta */
+                                if (strcmp(tr->children[1]->info.token_type, strdup("operador")) != 0) {
+                                    printf("\tmovl ");
+                                    printVarInClosure(tr->children[1]);
+                                    printf(", %%eax\n");
+                                }
+                                printf("\tmovl %%eax, ");
+                                printVarInClosure(tr);
+                                printf("\n");
+                            }
+
+                            /* Operações aritméticas */
+                            if (isArithmeticOp(tr) == 0) {
+                                if (isLastBinaryOp(tr) == 0) { // Caso ambos operandos sejam finais
+                                    /* Lê o primeiro operando */
+                                    printf("\tmovl ");
+                                    printVarInClosure(tr->children[0]);
+                                    printf(", %%eax\n");
+                                    /* Opera sobre o segundo */
+                                    printArithmeticOp(tr);
+                                    printf(" ");
+                                    printVarInClosure(tr->children[1]);
+                                    printf(", %%eax\n");
+                                }
+                                else if (isLastBinaryOp(tr) == 1) { // Caso um operando seja final
+                                    /* Opera sobre %eax */
+                                    printArithmeticOp(tr);
+                                    printf(" ");
+                                    if (strcmp(tr->children[0]->info.token_type, strdup("operador")) != 0) { // Se for o primeiro filho que é o operando final
+                                        printVarInClosure(tr->children[0]);
+                                    }
+                                    else {
+                                        printVarInClosure(tr->children[1]);
+                                    }
+                                    printf(", %%eax\n");
+                                }
+                            }
+                            
+                            /* Retorno */
+                            // Já funciona para expressões, uma vez que %eax é o registrador de retorno e também o padrão das operações
+                            if (strcmp(cursor->operation->operation, strdup("ret")) == 0) {
+                                printf("\tmovl ");
+                                printVarInClosure(tr->children[0]);
+                                printf(", %%eax\n");
+                            }
+
+                            /* Controle de fluxo */
+                            
+
+                        }
+
+                    }
+                    cursor = cursor->next_op;
+                }
+            }
+            /* Organiza ordem de operações */
+            for (int i = 0; i < tr->number_of_children; i++) {
+                if (tr->children[i] != NULL) {
+                    if (strcmp(tr->children[i]->info.token_type, strdup("comando simples")) == 0) {
+                        printAsmCodeSegment (tr->children[i]);
+                    }
+                }
+            }
+        }
+    }
+}
+
+short isLastBinaryOp (tree_t *t) {
+    if (t != NULL) {
+        /* É operador */
+        if (strcmp(t->info.token_type, strdup("operador")) == 0) {
+            if ((strcmp(t->children[0]->info.token_type, strdup("operador")) != 0) && (strcmp(t->children[1]->info.token_type, strdup("operador")) != 0)) {
+                return 0;
+            }
+            else if ((strcmp(t->children[0]->info.token_type, strdup("operador")) != 0) || (strcmp(t->children[1]->info.token_type, strdup("operador")) != 0)) {
+                return 1;
+            }
+            else {
+                return 2;
+            }
+        }
+    }
+    return 3;
+}
+
+void printVarInClosure (tree_t *tr) {
+    /* O nodo referencia a variável/literal em si */
+    if (strcmp(tr->info.token_type, strdup("identificador")) == 0) {
+        /* Variável é local */
+        if (strcmp(tr->prog->operation->input_1, strdup("rfp")) == 0) {
+            printf("-%d(%%rbp)", 4*(atoi(tr->prog->operation->input_2) + 1));
+        }
+        else {
+            /* Variável é global */
+            printf("%s(%%rip)", tr->info.token_value);
+        }
+    }
+    else if (strcmp(tr->prog->operation->operation, strdup("storeAI")) == 0) {
+        /* Variável é local */
+        if (strcmp(tr->prog->operation->output_1, strdup("rfp")) == 0) {
+            printf("-%d(%%rbp)", 4*(atoi(tr->prog->operation->output_2) + 1));
+        }
+        else {
+            /* Variável é global */
+            printf("%s(%%rip)", tr->children[0]->info.token_value);
+        }
+    }
+    else if (strcmp(tr->info.token_type, strdup("literal")) == 0) {
+        printf("$%s", tr->info.token_value);
+    }
+}
+
+void printArithmeticOp (tree_t *t) {
+    if (strcmp(t->info.token_value, strdup("+")) == 0) {
+        printf("\taddl");
+    }
+    else if (strcmp(t->info.token_value, strdup("-")) == 0) {
+        printf("\tsubl");
+    }
+    else if (strcmp(t->info.token_value, strdup("*")) == 0) {
+        printf("\timull");
+    }
+    else if (strcmp(t->info.token_value, strdup("/")) == 0) {
+        printf("\tcltd\n");
+        printf("\tidivl");
+    }
+}
+
+char* whichRegister (int depth) {
+    switch(depth) {
+        case 1:
+            return strdup("ebx");
+            break;
+        case 2:
+            return strdup("ecx");
+            break;
+        case 3:
+            return strdup("edx");
+            break;
+        case 4:
+            return strdup("r8d");
+            break;
+        case 5:
+            return strdup("r9d");
+            break;
+        case 6:
+            return strdup("r10d");
+            break;
+        default:
+            break;
+    }
+}
+
+short isArithmeticOp (tree_t *t) {
+    if (strcmp(t->info.token_value, strdup("operador")) == 0) {
+        if (strcmp(t->info.token_value, strdup("+")) == 0) {
+            return 0;
+        }
+        else if (strcmp(t->info.token_value, strdup("-")) == 0) {
+            return 0;
+        }
+        else if (strcmp(t->info.token_value, strdup("*")) == 0) {
+            return 0;
+        }
+        else if (strcmp(t->info.token_value, strdup("/")) == 0) {
+            return 0;
+        }
+        else {
+            return 1;
+        }
+    }
+    else {
+        return 2;
     }
 }
