@@ -825,19 +825,86 @@ short isInComplexExp = 0;
 /* Variável para saber se está dentro de uma expressão lógica */
 short isInLogicalExp = 0;
 
+/* Variável para saber se variáveis relacionais devem ser negadas */
+/* 0 = não negue, 1 = negue */
+short negateOperations = 0;
+
+/* Variável para setar a direção do jump */
+/* 0 = gera o bif, 1 = pega do nodo */
+short setJumpTo = 0;
 
 void printAsmCodeSegment (tree_t *tr) {
     if (tr != NULL) {
 
         if (isLastBinaryOp(tr) == 2) { // Caso exista parenteses na expressão -- limitado a 5 níveis de profundidade
-           printAsmCodeSegment(tr->children[0]);
-           isInComplexExp++;
-           char* reg = whichRegister(isInComplexExp);
-           printf("\tmovl %%eax, %%%s\n", reg);
-           printAsmCodeSegment(tr->children[1]);
-           printArithmeticOp(tr);
-           printf(" %%%s, %%eax\n", reg);
-           isInComplexExp--;
+            if (isArithmeticOp(tr) == 0) {
+                printAsmCodeSegment(tr->children[0]);
+                isInComplexExp++;
+                char* reg = whichRegister(isInComplexExp);
+                printf("\tmovl %%eax, %%%s\n", reg);
+                printAsmCodeSegment(tr->children[1]);
+                printArithmeticOp(tr);
+                printf(" %%%s, %%eax\n", reg);
+                isInComplexExp--;
+            }
+            else if (isArithmeticOp(tr) == 1) {
+                /* Trabalhado apenas para o if por enquanto */
+                if (strcmp(tr->info.token_value, strdup("&")) == 0) {
+                    /* Operações só são concatenadas */
+                    tr->children[0]->jumpTo = strdup(tr->jumpTo);
+                    tr->children[1]->jumpTo = strdup(tr->jumpTo);
+                    printAsmCodeSegment(tr->children[0]);
+                    printAsmCodeSegment(tr->children[1]);
+                }
+                else if (strcmp(tr->info.token_value, strdup("|")) == 0) {
+                    /* Operações devem ser invertidas, exceto a última */
+                    /* Todos os jumps, exceto o último, também deve ser alterados para o bloco de bif */
+                    if (negateOperations == 0) {
+                        negateOperations = 1;
+
+                        char *labeltoJumpTo;
+                        if (setJumpTo == 0) {
+                            char *buffer1 = strdup(tr->jumpTo);
+                            char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
+                            strncpy(buffer2, buffer1 + 1, strlen(buffer1));
+                            buffer2[strlen(buffer1) - 1] = '\0';
+                            int labelValue = atoi(buffer2) - 1;
+                            
+                            labeltoJumpTo = malloc(sizeof(char) * 8);
+                            sprintf(labeltoJumpTo, "L%d", labelValue);
+                            setJumpTo = 1;
+                        }
+                        else {
+                            labeltoJumpTo = strdup(tr->jumpTo);
+                        }
+                        tr->children[0]->jumpTo = strdup(labeltoJumpTo);
+                        tr->children[1]->jumpTo = strdup(labeltoJumpTo);
+                        printAsmCodeSegment(tr->children[0]);
+                        /* Se o filho da direita, último a ser processado, tiver algum operando final */
+                        if (isLastBinaryOp(tr->children[1]) != 2) {
+                            char *buffer1 = strdup(tr->jumpTo);
+                            char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
+                            strncpy(buffer2, buffer1 + 1, strlen(buffer1));
+                            buffer2[strlen(buffer1) - 1] = '\0';
+                            int labelValue = atoi(buffer2) + 1;
+                            char *buffer = malloc(sizeof(char) * 8);
+                            sprintf(buffer, "L%d", labelValue);
+                            tr->children[1]->jumpTo = strdup(buffer);
+                        }
+                        negateOperations = 0;
+                        printAsmCodeSegment(tr->children[1]);
+                    }
+                    else {
+                        char *labeltoJumpTo = strdup(tr->jumpTo);
+                        for (int i = 0; i < tr->number_of_children; i++) {
+                            if (tr->children[i] != NULL) {
+                                tr->children[i]->jumpTo = strdup(labeltoJumpTo);
+                                printAsmCodeSegment(tr->children[i]);
+                            }
+                        }
+                    }
+                }
+            }
         }
         /* Caso seja um if/if-else */
         else if (strcmp(tr->info.token_value, strdup("if")) == 0) {
@@ -980,7 +1047,7 @@ void printAsmCodeSegment (tree_t *tr) {
                                     /* Compara os registradores */
                                     printf("\tcmpl %%eax, %%edx\n");
                                     /* Faz o pulo */
-                                    printRelationalOp(tr, 0);
+                                    printRelationalOp(tr, negateOperations);
                                     printf(" .%s\n", tr->jumpTo);
                                 }
                             }
