@@ -65,6 +65,7 @@ typedef struct tree {
     lex_val info;
     char *reg;
     char *label;
+    char *jumpTo; // Label para qual a instrução deve pular, se necessário
     short isLast; // Flag para saber se é o último simple_command dentro de um command_block; 0 = Não, 1 = Sim
     iloc_prog *prog;
     int number_of_children;
@@ -222,7 +223,14 @@ void printArithmeticOp (tree_t *t);
 char* whichRegister (int depth);
 
 /* Checa se o nodo atual representa uma operação aritmética */
-/* 0 = é arimética, 1 = é operação relacional, 2 =  */
+/* 0 = é arimética, 1 = é operação relacional, 2 = não é uma operação */
 short isArithmeticOp (tree_t *t);
+
+/* Printa a operação relacional a ser feita em assembly */
+/* order = 0 -> operação reversa, order = 1 -> operação condizente */
+void printRelationalOp (tree_t *t, short order);
+
+/* Procura uma label em um bloco de comando */
+char* findLabelinBlock (tree_t *t);
 
 #endif //_UTILS_H_

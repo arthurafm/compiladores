@@ -216,9 +216,6 @@ simple_command_list: simple_command';' {
 
 		$$->children[$$->number_of_children - 1] = last;
 	}
-	tree_t *test = $$;
-	int a;
-	a = 1;
 };
 simple_command_list: simple_command';' simple_command_list {
 	if ($1 != NULL) {

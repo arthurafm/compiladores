@@ -33,6 +33,7 @@ tree_t *tree_new(lex_val info) {
     n->reg = NULL;
     n->isLast = 0;
     n->label = NULL;
+    n->jumpTo = NULL;
 
     n->prog = newILOCprog();
 
@@ -52,6 +53,7 @@ void tree_free(tree_t *tree) {
     free(tree->children);
     free(tree->reg);
     free(tree->label);
+    free(tree->jumpTo);
     free(tree->info.token_type);
 	free(tree->info.token_value);
     free(tree->info.type);
@@ -819,6 +821,11 @@ void printAsmDataSegment (pilha *stack) {
 
 /* Variável para saber se está dentro de uma expressão complexa */
 short isInComplexExp = 0;
+
+/* Variável para saber se está dentro de uma expressão lógica */
+short isInLogicalExp = 0;
+
+
 void printAsmCodeSegment (tree_t *tr) {
     if (tr != NULL) {
 
@@ -831,6 +838,63 @@ void printAsmCodeSegment (tree_t *tr) {
            printArithmeticOp(tr);
            printf(" %%%s, %%eax\n", reg);
            isInComplexExp--;
+        }
+        /* Caso seja um if/if-else */
+        else if (strcmp(tr->info.token_value, strdup("if")) == 0) {
+            /* Controle de fluxo */
+
+            /*
+            Estrutura de if-else:
+            movl <op1>, <reg1>
+            movl <op2>, <reg2>
+            cmpl <reg1>, <reg2>
+            <op-rel> .<label1>
+            <codigo if>
+            jmp .<label2>
+            .<label1>
+            <codigo else>
+            .<label2>
+            <codigo post>
+            */
+            /* Jumps incondicionais em ILOC são transcritos diretamente */
+
+            /* Em if's */
+            /* Quando é &, as operações só se concatenam */
+            /* Quando é |, as operações são invertidas (condizentes com o sinal), apenas a última se mantém */
+
+            /* Em while's */
+            /* Quando é &, as operações são invertidas (condizentes com o sinal), apenas a última se mantém */
+            /* Quando é |, as operações são invertidas e se concatenam */
+
+            /* Label do post-if está no nodo do if */
+            /* Label do bif/belse está na primeira operação */
+            isInLogicalExp = 1;
+
+            char* label_bif = findLabelinBlock(tr->children[1]);
+            char* label_belse = findLabelinBlock(tr->children[2]);
+            char* label_post = strdup(tr->label);
+            
+            /* Caso seja um if simples */
+            if (tr->number_of_children <= 3) {
+                tr->children[0]->jumpTo = strdup(label_post);
+                printAsmCodeSegment(tr->children[0]);
+                isInLogicalExp = 0;
+                printAsmCodeSegment(tr->children[1]);
+                printAsmCodeSegment(tr->children[2]);
+            }
+            /* Caso seja um if-else */
+            else {
+                tr->children[0]->jumpTo = strdup(label_belse);
+                printAsmCodeSegment(tr->children[0]);
+                isInLogicalExp = 0;
+                printAsmCodeSegment(tr->children[1]);
+                printf("\tjmp .%s\n", label_post);
+                printAsmCodeSegment(tr->children[2]);
+                printAsmCodeSegment(tr->children[3]);
+            }
+        }
+        else if (strcmp(tr->info.token_value, strdup("while")) == 0) {
+
         }
         else {
             /* Organiza ordem de operações */
@@ -888,24 +952,40 @@ void printAsmCodeSegment (tree_t *tr) {
                                     printf(", %%eax\n");
                                 }
                             }
+                            /* Operações relacionais */
+                            else if (isArithmeticOp(tr) == 1) {
+                                if (isInLogicalExp == 1) {
+                                    if (isLastBinaryOp(tr) == 0) { // Caso ambos operandos sejam finais
+                                        /* Lê o primeiro operando */
+                                        printf("\tmovl ");
+                                        printVarInClosure(tr->children[0]);
+                                        printf(", %%edx\n");
+                                        /* Lê o segundo operando */
+                                        printf("\tmovl ");
+                                        printVarInClosure(tr->children[1]);
+                                        printf(", %%eax\n");
+                                        /* Compara os registradores */
+                                        printf("\tcmpl %%eax, %%edx\n");
+                                        /* Faz o pulo */
+                                        printRelationalOp(tr, 0);
+                                        printf(" .%s\n", tr->jumpTo);
+                                    }
+                                    else if (isLastBinaryOp(tr) == 1) {
+
+                                    }
+                                }
+                            }
                             
                             /* Retorno */
                             // Já funciona para expressões, uma vez que %eax é o registrador de retorno e também o padrão das operações
                             if (strcmp(cursor->operation->operation, strdup("ret")) == 0) {
+                                /* Caso seja uma atribuição direta */
                                 if (strcmp(tr->children[0]->info.token_type, strdup("operador")) != 0) {
                                     printf("\tmovl ");
                                     printVarInClosure(tr->children[0]);
                                     printf(", %%eax\n");
                                 }
                             }
-
-                            /* Controle de fluxo */
-
-                            /* Jumps incondicionais em ILOC são transcritos diretamente */
-                            // if () {
-
-                            // }
-
                         }
 
                     }
@@ -1031,4 +1111,68 @@ short isArithmeticOp (tree_t *t) {
     else {
         return 2;
     }
+}
+
+void printRelationalOp (tree_t *t, short order) {
+    /* Jumps são contrários ao sinal */
+    if (strcmp(t->info.token_value, strdup("==")) == 0) {
+        if (order == 0) {
+            printf("\tjne");
+        }
+        else if (order == 1) {
+            printf("\tje");
+        }
+    }
+    else if (strcmp(t->info.token_value, strdup("!=")) == 0) {
+        if (order == 0) {
+            printf("\tje");
+        }
+        else if (order == 1) {
+            printf("\tjne");
+        }
+    }
+    else if (strcmp(t->info.token_value, strdup("<")) == 0) {
+        if (order == 0) {
+            printf("\tjge");
+        }
+        else if (order == 1) {
+            printf("\tjl");
+        }
+    }
+    else if (strcmp(t->info.token_value, strdup(">")) == 0) {
+        if (order == 0) {
+            printf("\tjle");
+        }
+        else if (order == 1) {
+            printf("\tjg");
+        }
+    }
+    else if (strcmp(t->info.token_value, strdup("<=")) == 0) {
+        if (order == 0) {
+            printf("\tjg");
+        }
+        else if (order == 1) {
+            printf("\tjle");
+        }
+    }
+    else if (strcmp(t->info.token_value, strdup(">=")) == 0) {
+        if (order == 0) {
+            printf("\tjl");
+        }
+        else if (order == 1) {
+            printf("\tjge");
+        }
+    }
+}
+
+char* findLabelinBlock (tree_t *t) {
+    if (t != NULL) {
+        tree_t *firstOp = findFirstOp(t);
+        if (firstOp != NULL) {
+            if (firstOp->prog->operation->label != NULL) {
+                return strdup(firstOp->prog->operation->label);
+            }
+        }
+    }
+    return NULL;
 }
