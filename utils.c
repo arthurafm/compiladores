@@ -1096,10 +1096,17 @@ void printAsmCodeSegment (tree_t *tr) {
                                     printf(", %%eax\n");
                                     /* Opera sobre o segundo */
                                     if (strcmp(tr->info.token_value, strdup("/")) != 0) {
-                                        printArithmeticOp(tr);
-                                        printf(" ");
-                                        printVarInClosure(tr->children[1]);
-                                        printf(", %%eax\n");
+                                        /* Se for uma negação unária */
+                                        if ((strcmp(tr->info.token_value, strdup("-")) == 0) && (tr->number_of_children == 1)) {
+                                            printArithmeticOp(tr);
+                                            printf(" %%eax\n");
+                                        }
+                                        else {
+                                            printArithmeticOp(tr);
+                                            printf(" ");
+                                            printVarInClosure(tr->children[1]);
+                                            printf(", %%eax\n");
+                                        }
                                     }
                                     else {
                                         /* Se for divisão, checa se operador é literal */
@@ -1222,7 +1229,13 @@ void printAsmCodeSegment (tree_t *tr) {
                         }
 
                     }
-                    cursor = cursor->next_op;
+                    /* Caso seja negação unária, não itera novamente sobre o programa em assembly - diferente de ILOC */
+                    if ((strcmp(tr->info.token_value, strdup("-")) == 0) && (tr->number_of_children == 1)) {
+                        cursor = NULL;
+                    }
+                    else {
+                        cursor = cursor->next_op;
+                    }
                 }
             }
             /* Organiza ordem de operações */
@@ -1241,11 +1254,24 @@ short isLastBinaryOp (tree_t *t) {
     if (t != NULL) {
         /* É operador */
         if (strcmp(t->info.token_type, strdup("operador")) == 0) {
-            if ((strcmp(t->children[0]->info.token_type, strdup("operador")) != 0) && (strcmp(t->children[1]->info.token_type, strdup("operador")) != 0)) {
-                return 0;
+            if (t->number_of_children == 2) {
+                if ((strcmp(t->children[0]->info.token_type, strdup("operador")) != 0) && (strcmp(t->children[1]->info.token_type, strdup("operador")) != 0)) {
+                    return 0;
+                }
+                else if ((strcmp(t->children[0]->info.token_type, strdup("operador")) != 0) || (strcmp(t->children[1]->info.token_type, strdup("operador")) != 0)) {
+                    return 1;
+                }
+                else {
+                    return 2;
+                }
             }
-            else if ((strcmp(t->children[0]->info.token_type, strdup("operador")) != 0) || (strcmp(t->children[1]->info.token_type, strdup("operador")) != 0)) {
-                return 1;
+            else if (t->number_of_children == 1) {
+                if (strcmp(t->children[0]->info.token_type, strdup("operador")) != 0) {
+                    return 0;
+                }
+                else {
+                    return 2;
+                }
             }
             else {
                 return 2;
@@ -1256,33 +1282,35 @@ short isLastBinaryOp (tree_t *t) {
 }
 
 void printVarInClosure (tree_t *tr) {
-    /* O nodo referencia a variável/literal em si */
-    if (strcmp(tr->info.token_type, strdup("identificador")) == 0) {
-        iloc_prog *cursor = tr->prog;
-        while (strcmp(cursor->operation->operation, strdup("loadAI")) != 0) {
-            cursor = cursor->next_op;
+    if (tr != NULL) {
+        /* O nodo referencia a variável/literal em si */
+        if (strcmp(tr->info.token_type, strdup("identificador")) == 0) {
+            iloc_prog *cursor = tr->prog;
+            while (strcmp(cursor->operation->operation, strdup("loadAI")) != 0) {
+                cursor = cursor->next_op;
+            }
+            /* Variável é local */
+            if (strcmp(cursor->operation->input_1, strdup("rfp")) == 0) {
+                printf("-%d(%%rbp)", 4*(atoi(cursor->operation->input_2) + 1));
+            }
+            else {
+                /* Variável é global */
+                printf("%s(%%rip)", tr->info.token_value);
+            }
         }
-        /* Variável é local */
-        if (strcmp(cursor->operation->input_1, strdup("rfp")) == 0) {
-            printf("-%d(%%rbp)", 4*(atoi(cursor->operation->input_2) + 1));
+        else if (strcmp(tr->prog->operation->operation, strdup("storeAI")) == 0) {
+            /* Variável é local */
+            if (strcmp(tr->prog->operation->output_1, strdup("rfp")) == 0) {
+                printf("-%d(%%rbp)", 4*(atoi(tr->prog->operation->output_2) + 1));
+            }
+            else {
+                /* Variável é global */
+                printf("%s(%%rip)", tr->children[0]->info.token_value);
+            }
         }
-        else {
-            /* Variável é global */
-            printf("%s(%%rip)", tr->info.token_value);
+        else if (strcmp(tr->info.token_type, strdup("literal")) == 0) {
+            printf("$%s", tr->info.token_value);
         }
-    }
-    else if (strcmp(tr->prog->operation->operation, strdup("storeAI")) == 0) {
-        /* Variável é local */
-        if (strcmp(tr->prog->operation->output_1, strdup("rfp")) == 0) {
-            printf("-%d(%%rbp)", 4*(atoi(tr->prog->operation->output_2) + 1));
-        }
-        else {
-            /* Variável é global */
-            printf("%s(%%rip)", tr->children[0]->info.token_value);
-        }
-    }
-    else if (strcmp(tr->info.token_type, strdup("literal")) == 0) {
-        printf("$%s", tr->info.token_value);
     }
 }
 
@@ -1291,7 +1319,12 @@ void printArithmeticOp (tree_t *t) {
         printf("\taddl");
     }
     else if (strcmp(t->info.token_value, strdup("-")) == 0) {
-        printf("\tsubl");
+        if (t->number_of_children == 2) {
+            printf("\tsubl");
+        }
+        else if (t->number_of_children == 1) {
+            printf("\tnegl");
+        }
     }
     else if (strcmp(t->info.token_value, strdup("*")) == 0) {
         printf("\timull");
