@@ -72,6 +72,17 @@ typedef struct tree {
     struct tree **children;
 } tree_t;
 
+/* --- Estrutura do Grafo de Controle de Fluxo --- */
+typedef struct asmprog {
+    char *instruction;
+    struct asmprog* next;
+} asm_prog;
+
+typedef struct cfgraph {
+    asm_prog *prog;
+    int number_of_children;
+    struct cfgraph **children;
+} cf_graph;
 
 /* Retorna o número da linha atual do código-fonte */
 int get_line_number();
@@ -206,18 +217,9 @@ void generateAsm (tree_t *t);
 /* Printa segmento de dados em assembly */
 void printAsmDataSegment (pilha *stack);
 
-/* Printa segmento de código em assembly */
-void printAsmCodeSegment (tree_t *t);
-
 /* Checa se o nodo atual da AST é a última de uma operação binária */
 /* 0 = é op-bin final; 1 = é op-bin, com 1 operando final; 2 = op-bin sem nenhum operando final; 3 = não é op-bin */
 short isLastBinaryOp (tree_t *t);
-
-/* Printa a variável em assembly no seu closure */
-void printVarInClosure (tree_t *tr);
-
-/* Printa a operação aritmética a ser feita em assembly */
-void printArithmeticOp (tree_t *t);
 
 /* Decide qual registrador vai ser utilizado como buffer */
 char* whichRegister (int depth);
@@ -226,11 +228,38 @@ char* whichRegister (int depth);
 /* 0 = é arimética, 1 = é operação relacional, 2 = não é uma operação */
 short isArithmeticOp (tree_t *t);
 
-/* Printa a operação relacional a ser feita em assembly */
-/* order = 0 -> operação reversa, order = 1 -> operação condizente */
-void printRelationalOp (tree_t *t, short order);
-
 /* Procura uma label em um bloco de comando */
 char* findLabelinBlock (tree_t *t);
+
+/* Cria lista encadeada de instruções ASM */
+asm_prog* create_asm_prog();
+
+/* Insere na lista encadeada de instruções ASM */
+asm_prog* asm_prog_insert(asm_prog *prog, char* instruction);
+
+/* Remove da lista encadeada de instruções ASM */
+char* asm_prog_remove (asm_prog *prog);
+
+/* Destrói uma lista encadeada de instruções ASM */
+void free_asm_prog (asm_prog* prog);
+
+/* Printa uma lista encadeada de instruções ASM */
+void printAsmProg (asm_prog *prog);
+
+/* Gera o grafo de controle de fluxo em formato DOT */
+void generateControlFluxGraph (cf_graph *graph);
+
+/* Itera sobre a AST, populando a lista encadeada de assembly */
+void createAsmProg (tree_t *tr);
+
+/* Retorna a variável em assembly no seu closure */
+char* getVarInClosure (tree_t *tr);
+
+/* Retorna a operação aritmética a ser feita em assembly */
+char* getArithmeticOp (tree_t *t);
+
+/* Retorna a operação relacional a ser feita em assembly */
+/* order = 0 -> operação reversa, order = 1 -> operação condizente */
+char* getRelationalop (tree_t *t, short order);
 
 #endif //_UTILS_H_

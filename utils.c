@@ -6,6 +6,7 @@
 extern int yylineno;
 extern void *arvore;
 extern pilha *stack;
+extern asm_prog *prog;
 
 int get_line_number() {
     return yylineno;
@@ -796,7 +797,8 @@ void generateAsm (tree_t *tr) {
             printf("\tpush %%rbp\n");
             printf("\tmovq %%rsp, %%rbp\n");
             
-            printAsmCodeSegment(t);
+            createAsmProg(t);
+            printAsmProg(prog);
 
             printf("\tpopq %%rbp\n");
             printf("\tret\n");
@@ -837,419 +839,6 @@ short setJumpTo = 0;
 /* 0 = nenhum, 1 = if, 2 = while */
 short closestContext = 0;
 
-void printAsmCodeSegment (tree_t *tr) {
-    if (tr != NULL) {
-
-        if (isLastBinaryOp(tr) == 2) { // Caso exista parenteses na expressão -- limitado a 5 níveis de profundidade
-            if (isArithmeticOp(tr) == 0) {
-                printAsmCodeSegment(tr->children[0]);
-                isInComplexExp++;
-                char* reg = whichRegister(isInComplexExp);
-                printf("\tmovl %%eax, %%%s\n", reg);
-                printAsmCodeSegment(tr->children[1]);
-                printArithmeticOp(tr);
-                printf(" %%%s, %%eax\n", reg);
-                isInComplexExp--;
-            }
-            else if (isArithmeticOp(tr) == 1) {
-                /* Trabalhado apenas para o if por enquanto */
-                /* Se contexto mais próximo é um if */
-                if (closestContext == 1) { 
-                    /* Em if's */
-                    /* Quando é &, as operações só se concatenam */
-                    if (strcmp(tr->info.token_value, strdup("&")) == 0) {
-                        tr->children[0]->jumpTo = strdup(tr->jumpTo);
-                        tr->children[1]->jumpTo = strdup(tr->jumpTo);
-                        printAsmCodeSegment(tr->children[0]);
-                        printAsmCodeSegment(tr->children[1]);
-                    }
-                    /* Quando é |, as operações são invertidas (condizentes com o sinal), apenas a última se mantém */
-                    else if (strcmp(tr->info.token_value, strdup("|")) == 0) {
-                        /* Todos os jumps, exceto o último, também deve ser alterados para o bloco de bif */
-                        if (negateOperations == 0) {
-                            negateOperations = 1;
-
-                            char *labeltoJumpTo;
-                            if (setJumpTo == 0) {
-                                char *buffer1 = strdup(tr->jumpTo);
-                                char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
-                                strncpy(buffer2, buffer1 + 1, strlen(buffer1));
-                                buffer2[strlen(buffer1) - 1] = '\0';
-                                int labelValue = atoi(buffer2) - 1;
-                                
-                                labeltoJumpTo = malloc(sizeof(char) * 8);
-                                sprintf(labeltoJumpTo, "L%d", labelValue);
-                                setJumpTo = 1;
-                            }
-                            else {
-                                labeltoJumpTo = strdup(tr->jumpTo);
-                            }
-                            tr->children[0]->jumpTo = strdup(labeltoJumpTo);
-                            tr->children[1]->jumpTo = strdup(labeltoJumpTo);
-                            printAsmCodeSegment(tr->children[0]);
-                            /* Se o filho da direita, último a ser processado, tiver algum operando final */
-                            if (isLastBinaryOp(tr->children[1]) != 2) {
-                                char *buffer1 = strdup(tr->jumpTo);
-                                char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
-                                strncpy(buffer2, buffer1 + 1, strlen(buffer1));
-                                buffer2[strlen(buffer1) - 1] = '\0';
-                                char *jumpToOp1 = strdup(tr->children[0]->jumpTo);
-                                char *jumpToNode = strdup(tr->jumpTo);
-                                int labelValue = atoi(buffer2);
-                                if (strcmp(jumpToOp1, jumpToNode) == 0) {
-                                    labelValue += 1;
-                                }
-                                char *buffer = malloc(sizeof(char) * 8);
-                                sprintf(buffer, "L%d", labelValue);
-                                tr->children[1]->jumpTo = strdup(buffer);
-                                negateOperations = 0;
-                                printAsmCodeSegment(tr->children[1]);
-                                setJumpTo = 0;
-                            }
-                            else {
-                                negateOperations = 0;
-                                printAsmCodeSegment(tr->children[1]);
-                            }
-                            
-                        }
-                        else {
-                            char *labeltoJumpTo = strdup(tr->jumpTo);
-                            for (int i = 0; i < tr->number_of_children; i++) {
-                                if (tr->children[i] != NULL) {
-                                    tr->children[i]->jumpTo = strdup(labeltoJumpTo);
-                                    printAsmCodeSegment(tr->children[i]);
-                                }
-                            }
-                        }
-                    }
-                }
-                /* Se contexto mais próximo é um while */
-                else if (closestContext == 2) {
-                    /* Em while's */
-                    /* Quando é |, as operações são invertidas e se concatenam */
-                    if (strcmp(tr->info.token_value, strdup("|")) == 0) {
-                        /* Operações só são concatenadas */
-                        tr->children[0]->jumpTo = strdup(tr->jumpTo);
-                        tr->children[1]->jumpTo = strdup(tr->jumpTo);
-                        printAsmCodeSegment(tr->children[0]);
-                        printAsmCodeSegment(tr->children[1]);
-                    }
-                    /* Quando é &, as operações são invertidas (condizentes com o sinal), apenas a última se mantém */
-                    else if (strcmp(tr->info.token_value, strdup("&")) == 0) {
-                        /* Todos os jumps, exceto o último, também deve ser alterados para o bloco de post */
-                        if (negateOperations == 1) {
-                            negateOperations = 0;
-
-                            char *labeltoJumpTo;
-                            if (setJumpTo == 0) {
-                                char *buffer1 = strdup(tr->jumpTo);
-                                char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
-                                strncpy(buffer2, buffer1 + 1, strlen(buffer1));
-                                buffer2[strlen(buffer1) - 1] = '\0';
-                                int labelValue = atoi(buffer2) + 1;
-                                
-                                labeltoJumpTo = malloc(sizeof(char) * 8);
-                                sprintf(labeltoJumpTo, "L%d", labelValue);
-                                setJumpTo = 1;
-                            }
-                            else {
-                                labeltoJumpTo = strdup(tr->jumpTo);
-                            }
-                            tr->children[0]->jumpTo = strdup(labeltoJumpTo);
-                            tr->children[1]->jumpTo = strdup(labeltoJumpTo);
-                            printAsmCodeSegment(tr->children[0]);
-                            /* Se o filho da direita, último a ser processado, tiver algum operando final */
-                            if (isLastBinaryOp(tr->children[1]) != 2) {
-                                char *buffer1 = strdup(tr->jumpTo);
-                                char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
-                                strncpy(buffer2, buffer1 + 1, strlen(buffer1));
-                                buffer2[strlen(buffer1) - 1] = '\0';
-                                char *jumpToOp1 = strdup(tr->children[0]->jumpTo);
-                                char *jumpToNode = strdup(tr->jumpTo);
-                                int labelValue = atoi(buffer2);
-                                if (strcmp(jumpToOp1, jumpToNode) == 0) {
-                                    labelValue -= 1;
-                                }
-                                char *buffer = malloc(sizeof(char) * 8);
-                                sprintf(buffer, "L%d", labelValue);
-                                tr->children[1]->jumpTo = strdup(buffer);
-                                negateOperations = 1;
-                                printAsmCodeSegment(tr->children[1]);
-                                setJumpTo = 0;
-                            }
-                            else {
-                                negateOperations = 1;
-                                printAsmCodeSegment(tr->children[1]);
-                            }
-                            
-                        }
-                        else {
-                            char *labeltoJumpTo = strdup(tr->jumpTo);
-                            for (int i = 0; i < tr->number_of_children; i++) {
-                                if (tr->children[i] != NULL) {
-                                    tr->children[i]->jumpTo = strdup(labeltoJumpTo);
-                                    printAsmCodeSegment(tr->children[i]);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        /* Controle de fluxo */
-        /* Caso seja um if/if-else */
-        else if (strcmp(tr->info.token_value, strdup("if")) == 0) {
-            short buffer = closestContext;
-            isInLogicalExp = 1;
-
-            char* label_bif = findLabelinBlock(tr->children[1]);
-            char* label_belse = findLabelinBlock(tr->children[2]);
-            char* label_post = strdup(tr->label);
-
-            closestContext = 1; // Seta que contexto mais próximo é um if
-            /* Caso seja um if simples */
-            if (tr->number_of_children <= 3) {
-                tr->children[0]->jumpTo = strdup(label_post);
-                printAsmCodeSegment(tr->children[0]);
-                isInLogicalExp = 0;
-                printAsmCodeSegment(tr->children[1]);
-                printAsmCodeSegment(tr->children[2]);
-            }
-            /* Caso seja um if-else */
-            else {
-                tr->children[0]->jumpTo = strdup(label_belse);
-                printAsmCodeSegment(tr->children[0]);
-                isInLogicalExp = 0;
-                printAsmCodeSegment(tr->children[1]);
-                printf("\tjmp .%s\n", label_post);
-                printAsmCodeSegment(tr->children[2]);
-                printAsmCodeSegment(tr->children[3]);
-            }
-            closestContext = buffer;
-        }
-        /* Caso seja um while */
-        else if (strcmp(tr->info.token_value, strdup("while")) == 0) {
-            /*
-            Estrutura de um while
-            jmp .<label-teste>
-            .<label-command_block>:
-            <codigo while>
-            .<label-teste>:
-            <codigo teste>
-            cmpl <reg1>, <reg2>
-            <op-rel> .<label-command_block>
-            */
-           /* Jumps tem que ser condizentes */
-            short buffer = closestContext;
-            isInLogicalExp = 1;
-
-            char* label_test = findLabelinBlock(tr->children[0]);
-            char* label_cb = findLabelinBlock(tr->children[1]);
-            char* label_post = strdup(tr->label);
-
-            closestContext = 2; // Seta que contexto mais próximo é um while
-            printf("\tjmp .%s\n", label_test);
-            printAsmCodeSegment(tr->children[1]);
-            negateOperations = 1;
-            tr->children[0]->jumpTo = strdup(label_cb);
-            printAsmCodeSegment(tr->children[0]);
-            negateOperations = 0;
-            printAsmCodeSegment(tr->children[2]);
-            closestContext = buffer;
-        }
-        else {
-            /* Organiza ordem de operações */
-            for (int i = 0; i < tr->number_of_children; i++) {
-                if (tr->children[i] != NULL) {
-                    if (strcmp(tr->children[i]->info.token_type, strdup("comando simples")) != 0) {
-                        printAsmCodeSegment (tr->children[i]);
-                    }
-                }
-            }
-            if (tr->prog != NULL) {
-                iloc_prog *cursor = tr->prog;
-                while (cursor != NULL) {
-                    if (cursor->operation != NULL) {
-                        if (cursor->operation->label != NULL) {
-                            printf(".%s:\n", cursor->operation->label);
-                        }
-                        if (cursor->operation->operation != NULL) {
-                            /* Atribuição */
-                            if (strcmp(cursor->operation->operation, strdup("storeAI")) == 0) {
-                                /* Caso seja uma atribuição direta */
-                                if (strcmp(tr->children[1]->info.token_type, strdup("operador")) != 0) {
-                                    printf("\tmovl ");
-                                    printVarInClosure(tr->children[1]);
-                                    printf(", %%eax\n");
-                                }
-                                printf("\tmovl %%eax, ");
-                                printVarInClosure(tr);
-                                printf("\n");
-                            }
-
-                            /* Operações aritméticas */
-                            if (isArithmeticOp(tr) == 0) {
-                                if (isLastBinaryOp(tr) == 0) { // Caso ambos operandos sejam finais
-                                    /* Lê o primeiro operando */
-                                    printf("\tmovl ");
-                                    printVarInClosure(tr->children[0]);
-                                    printf(", %%eax\n");
-                                    /* Opera sobre o segundo */
-                                    if (strcmp(tr->info.token_value, strdup("/")) != 0) {
-                                        /* Se for uma negação unária */
-                                        if ((strcmp(tr->info.token_value, strdup("-")) == 0) && (tr->number_of_children == 1)) {
-                                            printArithmeticOp(tr);
-                                            printf(" %%eax\n");
-                                        }
-                                        else {
-                                            printArithmeticOp(tr);
-                                            printf(" ");
-                                            printVarInClosure(tr->children[1]);
-                                            printf(", %%eax\n");
-                                        }
-                                    }
-                                    else {
-                                        /* Se for divisão, checa se operador é literal */
-                                        /* idivl não funciona sob literais */
-                                        if (strcmp(tr->children[1]->info.token_type, strdup("literal")) == 0) {
-                                            char *reg = whichRegister(isInComplexExp + 1);
-                                            printf("\tmovl ");
-                                            printVarInClosure(tr->children[1]);
-                                            printf(", %%%s\n", reg);
-                                            printArithmeticOp(tr);
-                                            printf(" %%%s\n", reg);
-                                        }
-                                        else {
-                                            printArithmeticOp(tr);
-                                            printf(" ");
-                                            printVarInClosure(tr->children[1]);
-                                            printf("\n");
-                                        }
-                                    }
-                                }
-                                else if (isLastBinaryOp(tr) == 1) { // Caso um operando seja final
-                                    /* Opera sobre %eax */
-                                    if (strcmp(tr->children[0]->info.token_type, strdup("operador")) != 0) { // Se for o primeiro filho que é o operando final
-                                        if (strcmp(tr->info.token_value, strdup("/")) != 0) {
-                                            printArithmeticOp(tr);
-                                            printf(" ");
-                                            printVarInClosure(tr->children[0]);
-                                            printf(", %%eax\n");
-                                        }
-                                        else {
-                                            /* Se for divisão, checa se operador é literal */
-                                            /* idivl não funciona sob literais */
-                                            if (strcmp(tr->children[0]->info.token_type, strdup("literal")) == 0) {
-                                                char *reg = whichRegister(isInComplexExp + 1);
-                                                printf("\tmovl ");
-                                                printVarInClosure(tr->children[0]);
-                                                printf(", %%%s\n", reg);
-                                                printArithmeticOp(tr);
-                                                printf(" %%%s\n", reg);
-                                            }
-                                            else {
-                                                printArithmeticOp(tr);
-                                                printf(" ");
-                                                printVarInClosure(tr->children[0]);
-                                                printf("\n");
-                                            }
-                                        }
-                                    }
-                                    else {
-                                        if (strcmp(tr->info.token_value, strdup("/")) != 0) {
-                                            printArithmeticOp(tr);
-                                            printf(" ");
-                                            printVarInClosure(tr->children[1]);
-                                            printf(", %%eax\n");
-                                        }
-                                        else {
-                                            /* Se for divisão, checa se operador é literal */
-                                            /* idivl não funciona sob literais */
-                                            if (strcmp(tr->children[1]->info.token_type, strdup("literal")) == 0) {
-                                                char *reg = whichRegister(isInComplexExp + 1);
-                                                printf("\tmovl ");
-                                                printVarInClosure(tr->children[1]);
-                                                printf(", %%%s\n", reg);
-                                                printArithmeticOp(tr);
-                                                printf(" %%%s\n", reg);
-                                            }
-                                            else {
-                                                printArithmeticOp(tr);
-                                                printf(" ");
-                                                printVarInClosure(tr->children[1]);
-                                                printf("\n");
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            /* Operações relacionais */
-                            else if (isArithmeticOp(tr) == 1) {
-                                if (isInLogicalExp == 1) {
-                                    if (isLastBinaryOp(tr) == 0) { // Caso ambos operandos sejam finais
-                                        /* Lê o primeiro operando */
-                                        printf("\tmovl ");
-                                        printVarInClosure(tr->children[0]);
-                                        printf(", %%edx\n");
-                                        /* Lê o segundo operando */
-                                        printf("\tmovl ");
-                                        printVarInClosure(tr->children[1]);
-                                        printf(", %%eax\n");
-                                    }
-                                    else if (isLastBinaryOp(tr) == 1) {
-                                        /* Assume que o operando não final está em eax */
-                                        if (strcmp(tr->children[0]->info.token_type, strdup("operador")) != 0) { // Se for o primeiro filho que é o operando final
-                                            printf("\tmovl ");
-                                            printVarInClosure(tr->children[0]);
-                                        }
-                                        else {
-                                            printf("\tmovl ");
-                                            printVarInClosure(tr->children[1]);
-                                        }
-                                        printf(", %%edx\n");
-                                    }
-                                    /* Compara os registradores */
-                                    printf("\tcmpl %%eax, %%edx\n");
-                                    /* Faz o pulo */
-                                    printRelationalOp(tr, negateOperations);
-                                    printf(" .%s\n", tr->jumpTo);
-                                }
-                            }
-                            
-                            /* Retorno */
-                            // Já funciona para expressões, uma vez que %eax é o registrador de retorno e também o padrão das operações
-                            if (strcmp(cursor->operation->operation, strdup("ret")) == 0) {
-                                /* Caso seja uma atribuição direta */
-                                if (strcmp(tr->children[0]->info.token_type, strdup("operador")) != 0) {
-                                    printf("\tmovl ");
-                                    printVarInClosure(tr->children[0]);
-                                    printf(", %%eax\n");
-                                }
-                            }
-                        }
-
-                    }
-                    /* Caso seja negação unária, não itera novamente sobre o programa em assembly - diferente de ILOC */
-                    if ((strcmp(tr->info.token_value, strdup("-")) == 0) && (tr->number_of_children == 1)) {
-                        cursor = NULL;
-                    }
-                    else {
-                        cursor = cursor->next_op;
-                    }
-                }
-            }
-            /* Organiza ordem de operações */
-            for (int i = 0; i < tr->number_of_children; i++) {
-                if (tr->children[i] != NULL) {
-                    if (strcmp(tr->children[i]->info.token_type, strdup("comando simples")) == 0) {
-                        printAsmCodeSegment (tr->children[i]);
-                    }
-                }
-            }
-        }
-    }
-}
-
 short isLastBinaryOp (tree_t *t) {
     if (t != NULL) {
         /* É operador */
@@ -1279,60 +868,6 @@ short isLastBinaryOp (tree_t *t) {
         }
     }
     return 3;
-}
-
-void printVarInClosure (tree_t *tr) {
-    if (tr != NULL) {
-        /* O nodo referencia a variável/literal em si */
-        if (strcmp(tr->info.token_type, strdup("identificador")) == 0) {
-            iloc_prog *cursor = tr->prog;
-            while (strcmp(cursor->operation->operation, strdup("loadAI")) != 0) {
-                cursor = cursor->next_op;
-            }
-            /* Variável é local */
-            if (strcmp(cursor->operation->input_1, strdup("rfp")) == 0) {
-                printf("-%d(%%rbp)", 4*(atoi(cursor->operation->input_2) + 1));
-            }
-            else {
-                /* Variável é global */
-                printf("%s(%%rip)", tr->info.token_value);
-            }
-        }
-        else if (strcmp(tr->prog->operation->operation, strdup("storeAI")) == 0) {
-            /* Variável é local */
-            if (strcmp(tr->prog->operation->output_1, strdup("rfp")) == 0) {
-                printf("-%d(%%rbp)", 4*(atoi(tr->prog->operation->output_2) + 1));
-            }
-            else {
-                /* Variável é global */
-                printf("%s(%%rip)", tr->children[0]->info.token_value);
-            }
-        }
-        else if (strcmp(tr->info.token_type, strdup("literal")) == 0) {
-            printf("$%s", tr->info.token_value);
-        }
-    }
-}
-
-void printArithmeticOp (tree_t *t) {
-    if (strcmp(t->info.token_value, strdup("+")) == 0) {
-        printf("\taddl");
-    }
-    else if (strcmp(t->info.token_value, strdup("-")) == 0) {
-        if (t->number_of_children == 2) {
-            printf("\tsubl");
-        }
-        else if (t->number_of_children == 1) {
-            printf("\tnegl");
-        }
-    }
-    else if (strcmp(t->info.token_value, strdup("*")) == 0) {
-        printf("\timull");
-    }
-    else if (strcmp(t->info.token_value, strdup("/")) == 0) {
-        printf("\tcltd\n");
-        printf("\tidivl");
-    }
 }
 
 char* whichRegister (int depth) {
@@ -1383,58 +918,6 @@ short isArithmeticOp (tree_t *t) {
     }
 }
 
-void printRelationalOp (tree_t *t, short order) {
-    /* Jumps são contrários ao sinal */
-    if (strcmp(t->info.token_value, strdup("==")) == 0) {
-        if (order == 0) {
-            printf("\tjne");
-        }
-        else if (order == 1) {
-            printf("\tje");
-        }
-    }
-    else if (strcmp(t->info.token_value, strdup("!=")) == 0) {
-        if (order == 0) {
-            printf("\tje");
-        }
-        else if (order == 1) {
-            printf("\tjne");
-        }
-    }
-    else if (strcmp(t->info.token_value, strdup("<")) == 0) {
-        if (order == 0) {
-            printf("\tjge");
-        }
-        else if (order == 1) {
-            printf("\tjl");
-        }
-    }
-    else if (strcmp(t->info.token_value, strdup(">")) == 0) {
-        if (order == 0) {
-            printf("\tjle");
-        }
-        else if (order == 1) {
-            printf("\tjg");
-        }
-    }
-    else if (strcmp(t->info.token_value, strdup("<=")) == 0) {
-        if (order == 0) {
-            printf("\tjg");
-        }
-        else if (order == 1) {
-            printf("\tjle");
-        }
-    }
-    else if (strcmp(t->info.token_value, strdup(">=")) == 0) {
-        if (order == 0) {
-            printf("\tjl");
-        }
-        else if (order == 1) {
-            printf("\tjge");
-        }
-    }
-}
-
 char* findLabelinBlock (tree_t *t) {
     if (t != NULL) {
         tree_t *firstOp = findFirstOp(t);
@@ -1445,4 +928,707 @@ char* findLabelinBlock (tree_t *t) {
         }
     }
     return NULL;
+}
+
+asm_prog* create_asm_prog() {
+    asm_prog* prog = (asm_prog *) malloc(sizeof(asm_prog));
+
+    return prog;
+}
+
+asm_prog* asm_prog_insert(asm_prog *prog, char* instruction) {
+    if (!prog)
+    {
+        asm_prog* head = create_asm_prog();
+        head->instruction = instruction;
+        head->next = NULL;
+        prog = head;
+        return prog;
+    }
+    else if (prog->next == NULL)
+    {
+        asm_prog* node = create_asm_prog();
+        node->instruction = instruction;
+        node->next = NULL;
+        prog->next = node;
+        return prog;
+    }
+
+    asm_prog* temp = prog;
+
+    while (temp->next)
+    {
+        temp = temp->next;
+    }
+
+    asm_prog* node = create_asm_prog();
+    node->instruction = instruction;
+    node->next = NULL;
+    temp->next = node;
+    return prog;
+}
+
+char* asm_prog_remove (asm_prog *prog) {
+    if (!prog)
+        return NULL;
+
+    if (!prog->next)
+        return NULL;
+
+    asm_prog* node = prog->next;
+    asm_prog* temp = prog;
+    temp->next = NULL;
+    prog = node;
+    char* it = strdup(temp->instruction);
+    free(temp->instruction);
+    free(temp);
+    return it;
+}
+
+void free_asm_prog (asm_prog* prog) {
+    asm_prog* temp = prog;
+
+    while (prog)
+    {
+        temp = prog;
+        prog = prog->next;
+        free(temp->instruction);
+        free(temp);
+    }
+}
+
+void printAsmProg (asm_prog *prog) {
+    asm_prog *cursor = prog;
+    while (cursor != NULL) {
+        printf("%s", cursor->instruction);
+        cursor = cursor->next;
+    }
+}
+
+void generateControlFluxGraph (cf_graph *graph) {
+
+}
+
+void createAsmProg (tree_t *tr) {
+    if (tr != NULL) {
+        if (isLastBinaryOp(tr) == 2) { // Caso exista parenteses na expressão -- limitado a 5 níveis de profundidade
+            if (isArithmeticOp(tr) == 0) {
+                createAsmProg(tr->children[0]);
+                isInComplexExp++;
+                char* reg = whichRegister(isInComplexExp);
+                char *buffer = malloc(sizeof(char) * 50);
+                sprintf(buffer, "\tmovl %%eax, %%%s\n", reg);
+                prog = asm_prog_insert(prog, strdup(buffer));
+                free(buffer);
+                createAsmProg(tr->children[1]);
+                char *buffer3 = malloc(sizeof(char) * 50);
+                strcpy(buffer3, "");
+                getArithmeticOp(tr);
+                strcat(buffer3, getArithmeticOp(tr));
+                char *buffer2 = malloc(sizeof(char) * 50);
+                sprintf(buffer2, " %%%s, %%eax\n", reg);
+                strcat(buffer3, buffer2);
+                prog = asm_prog_insert(prog, strdup(buffer3));
+                free(buffer3);
+                free(buffer2);
+                isInComplexExp--;
+            }
+            else if (isArithmeticOp(tr) == 1) {
+                /* Se contexto mais próximo é um if */
+                if (closestContext == 1) { 
+                    /* Quando é &, as operações só se concatenam */
+                    if (strcmp(tr->info.token_value, strdup("&")) == 0) {
+                        tr->children[0]->jumpTo = strdup(tr->jumpTo);
+                        tr->children[1]->jumpTo = strdup(tr->jumpTo);
+                        createAsmProg(tr->children[0]);
+                        createAsmProg(tr->children[1]);
+                    }
+                    /* Quando é |, as operações são invertidas (condizentes com o sinal), apenas a última se mantém */
+                    else if (strcmp(tr->info.token_value, strdup("|")) == 0) {
+                        /* Todos os jumps, exceto o último, também deve ser alterados para o bloco de bif */
+                        if (negateOperations == 0) {
+                            negateOperations = 1;
+
+                            char *labeltoJumpTo;
+                            if (setJumpTo == 0) {
+                                char *buffer1 = strdup(tr->jumpTo);
+                                char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
+                                strncpy(buffer2, buffer1 + 1, strlen(buffer1));
+                                buffer2[strlen(buffer1) - 1] = '\0';
+                                int labelValue = atoi(buffer2) - 1;
+                                
+                                labeltoJumpTo = malloc(sizeof(char) * 8);
+                                sprintf(labeltoJumpTo, "L%d", labelValue);
+                                setJumpTo = 1;
+                            }
+                            else {
+                                labeltoJumpTo = strdup(tr->jumpTo);
+                            }
+                            tr->children[0]->jumpTo = strdup(labeltoJumpTo);
+                            tr->children[1]->jumpTo = strdup(labeltoJumpTo);
+                            createAsmProg(tr->children[0]);
+                            /* Se o filho da direita, último a ser processado, tiver algum operando final */
+                            if (isLastBinaryOp(tr->children[1]) != 2) {
+                                char *buffer1 = strdup(tr->jumpTo);
+                                char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
+                                strncpy(buffer2, buffer1 + 1, strlen(buffer1));
+                                buffer2[strlen(buffer1) - 1] = '\0';
+                                char *jumpToOp1 = strdup(tr->children[0]->jumpTo);
+                                char *jumpToNode = strdup(tr->jumpTo);
+                                int labelValue = atoi(buffer2);
+                                if (strcmp(jumpToOp1, jumpToNode) == 0) {
+                                    labelValue += 1;
+                                }
+                                char *buffer = malloc(sizeof(char) * 8);
+                                sprintf(buffer, "L%d", labelValue);
+                                tr->children[1]->jumpTo = strdup(buffer);
+                                negateOperations = 0;
+                                createAsmProg(tr->children[1]);
+                                setJumpTo = 0;
+                            }
+                            else {
+                                negateOperations = 0;
+                                createAsmProg(tr->children[1]);
+                            }
+                            
+                        }
+                        else {
+                            char *labeltoJumpTo = strdup(tr->jumpTo);
+                            for (int i = 0; i < tr->number_of_children; i++) {
+                                if (tr->children[i] != NULL) {
+                                    tr->children[i]->jumpTo = strdup(labeltoJumpTo);
+                                    createAsmProg(tr->children[i]);
+                                }
+                            }
+                        }
+                    }
+                }
+                /* Se contexto mais próximo é um while */
+                else if (closestContext == 2) {
+                    /* Quando é |, as operações são invertidas e se concatenam */
+                    if (strcmp(tr->info.token_value, strdup("|")) == 0) {
+                        /* Operações só são concatenadas */
+                        tr->children[0]->jumpTo = strdup(tr->jumpTo);
+                        tr->children[1]->jumpTo = strdup(tr->jumpTo);
+                        createAsmProg(tr->children[0]);
+                        createAsmProg(tr->children[1]);
+                    }
+                    /* Quando é &, as operações são invertidas (condizentes com o sinal), apenas a última se mantém */
+                    else if (strcmp(tr->info.token_value, strdup("&")) == 0) {
+                        /* Todos os jumps, exceto o último, também deve ser alterados para o bloco de post */
+                        if (negateOperations == 1) {
+                            negateOperations = 0;
+
+                            char *labeltoJumpTo;
+                            if (setJumpTo == 0) {
+                                char *buffer1 = strdup(tr->jumpTo);
+                                char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
+                                strncpy(buffer2, buffer1 + 1, strlen(buffer1));
+                                buffer2[strlen(buffer1) - 1] = '\0';
+                                int labelValue = atoi(buffer2) + 1;
+                                
+                                labeltoJumpTo = malloc(sizeof(char) * 8);
+                                sprintf(labeltoJumpTo, "L%d", labelValue);
+                                setJumpTo = 1;
+                            }
+                            else {
+                                labeltoJumpTo = strdup(tr->jumpTo);
+                            }
+                            tr->children[0]->jumpTo = strdup(labeltoJumpTo);
+                            tr->children[1]->jumpTo = strdup(labeltoJumpTo);
+                            createAsmProg(tr->children[0]);
+                            /* Se o filho da direita, último a ser processado, tiver algum operando final */
+                            if (isLastBinaryOp(tr->children[1]) != 2) {
+                                char *buffer1 = strdup(tr->jumpTo);
+                                char *buffer2 = malloc(sizeof(char) * strlen(buffer1));
+                                strncpy(buffer2, buffer1 + 1, strlen(buffer1));
+                                buffer2[strlen(buffer1) - 1] = '\0';
+                                char *jumpToOp1 = strdup(tr->children[0]->jumpTo);
+                                char *jumpToNode = strdup(tr->jumpTo);
+                                int labelValue = atoi(buffer2);
+                                if (strcmp(jumpToOp1, jumpToNode) == 0) {
+                                    labelValue -= 1;
+                                }
+                                char *buffer = malloc(sizeof(char) * 8);
+                                sprintf(buffer, "L%d", labelValue);
+                                tr->children[1]->jumpTo = strdup(buffer);
+                                negateOperations = 1;
+                                createAsmProg(tr->children[1]);
+                                setJumpTo = 0;
+                            }
+                            else {
+                                negateOperations = 1;
+                                createAsmProg(tr->children[1]);
+                            }
+                            
+                        }
+                        else {
+                            char *labeltoJumpTo = strdup(tr->jumpTo);
+                            for (int i = 0; i < tr->number_of_children; i++) {
+                                if (tr->children[i] != NULL) {
+                                    tr->children[i]->jumpTo = strdup(labeltoJumpTo);
+                                    createAsmProg(tr->children[i]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        /* Controle de fluxo */
+        /* Caso seja um if/if-else */
+        else if (strcmp(tr->info.token_value, strdup("if")) == 0) {
+            short buffer = closestContext;
+            isInLogicalExp = 1;
+
+            char* label_bif = findLabelinBlock(tr->children[1]);
+            char* label_belse = findLabelinBlock(tr->children[2]);
+            char* label_post = strdup(tr->label);
+
+            closestContext = 1; // Seta que contexto mais próximo é um if
+            /* Caso seja um if simples */
+            if (tr->number_of_children <= 3) {
+                tr->children[0]->jumpTo = strdup(label_post);
+                createAsmProg(tr->children[0]);
+                isInLogicalExp = 0;
+                createAsmProg(tr->children[1]);
+                createAsmProg(tr->children[2]);
+            }
+            /* Caso seja um if-else */
+            else {
+                tr->children[0]->jumpTo = strdup(label_belse);
+                createAsmProg(tr->children[0]);
+                isInLogicalExp = 0;
+                createAsmProg(tr->children[1]);
+                char *buffer = malloc(sizeof(char) * 50);
+                sprintf(buffer, "\tjmp .%s\n", label_post);
+                prog = asm_prog_insert(prog, strdup(buffer));
+                free(buffer);
+                createAsmProg(tr->children[2]);
+                createAsmProg(tr->children[3]);
+            }
+            closestContext = buffer;
+        }
+        /* Caso seja um while */
+        else if (strcmp(tr->info.token_value, strdup("while")) == 0) {
+           /* Jumps tem que ser condizentes */
+            short buffer = closestContext;
+            isInLogicalExp = 1;
+
+            char* label_test = findLabelinBlock(tr->children[0]);
+            char* label_cb = findLabelinBlock(tr->children[1]);
+            char* label_post = strdup(tr->label);
+
+            closestContext = 2; // Seta que contexto mais próximo é um while
+            char *buffer2 = malloc(sizeof(char) * 50);
+            sprintf(buffer2, "\tjmp .%s\n", label_test);
+            prog = asm_prog_insert(prog, strdup(buffer2));
+            free(buffer2);
+            createAsmProg(tr->children[1]);
+            negateOperations = 1;
+            tr->children[0]->jumpTo = strdup(label_cb);
+            createAsmProg(tr->children[0]);
+            negateOperations = 0;
+            createAsmProg(tr->children[2]);
+            closestContext = buffer;
+        }
+        else {
+            /* Organiza ordem de operações */
+            for (int i = 0; i < tr->number_of_children; i++) {
+                if (tr->children[i] != NULL) {
+                    if (strcmp(tr->children[i]->info.token_type, strdup("comando simples")) != 0) {
+                        createAsmProg (tr->children[i]);
+                    }
+                }
+            }
+            if (tr->prog != NULL) {
+                iloc_prog *cursor = tr->prog;
+                while (cursor != NULL) {
+                    if (cursor->operation != NULL) {
+                        if (cursor->operation->label != NULL) {
+                            char *buffer = malloc(sizeof(char) * 50);
+                            sprintf(buffer, ".%s:\n", cursor->operation->label);
+                            prog = asm_prog_insert(prog, strdup(buffer));
+                            free(buffer);
+                        }
+                        if (cursor->operation->operation != NULL) {
+                            /* Atribuição */
+                            if (strcmp(cursor->operation->operation, strdup("storeAI")) == 0) {
+                                /* Caso seja uma atribuição direta */
+                                if (strcmp(tr->children[1]->info.token_type, strdup("operador")) != 0) {
+                                    char *buffer = malloc(sizeof(char) * 50);
+                                    sprintf(buffer, "\tmovl ");
+                                    strcat(buffer, getVarInClosure(tr->children[1]));
+                                    strcat(buffer, strdup(", %eax\n"));
+                                    prog = asm_prog_insert(prog, strdup(buffer));
+                                    free(buffer);
+                                }
+                                char *buffer = malloc(sizeof(char) * 50);
+                                sprintf(buffer, "\tmovl %%eax, ");
+                                strcat(buffer, getVarInClosure(tr));
+                                strcat(buffer, strdup("\n"));
+                                prog = asm_prog_insert(prog, strdup(buffer));
+                                free(buffer);
+                            }
+
+                            /* Operações aritméticas */
+                            if (isArithmeticOp(tr) == 0) {
+                                if (isLastBinaryOp(tr) == 0) { // Caso ambos operandos sejam finais
+                                    /* Lê o primeiro operando */
+                                    char *buffer = malloc(sizeof(char) * 50);
+                                    sprintf(buffer, "\tmovl ");
+                                    strcat(buffer, getVarInClosure(tr->children[0]));
+                                    strcat(buffer, strdup(", %eax\n"));
+                                    prog = asm_prog_insert(prog, strdup(buffer));
+                                    free(buffer);
+                                    /* Opera sobre o segundo */
+                                    if (strcmp(tr->info.token_value, strdup("/")) != 0) {
+                                        /* Se for uma negação unária */
+                                        if ((strcmp(tr->info.token_value, strdup("-")) == 0) && (tr->number_of_children == 1)) {
+                                            char *buffer = malloc(sizeof(char) * 50);
+                                            strcpy(buffer, strdup(""));
+                                            strcat(buffer, getArithmeticOp(tr));
+                                            strcat(buffer, strdup(" %eax\n"));
+                                            prog = asm_prog_insert(prog, strdup(buffer));
+                                            free(buffer);
+                                        }
+                                        else {
+                                            char *buffer = malloc(sizeof(char) * 50);
+                                            strcpy(buffer, strdup(""));
+                                            strcat(buffer, strdup(getArithmeticOp(tr)));
+                                            strcat(buffer, strdup(" "));
+                                            strcat(buffer, getVarInClosure(tr->children[1]));
+                                            strcat(buffer, strdup(", %eax\n"));
+                                            prog = asm_prog_insert(prog, strdup(buffer));
+                                            free(buffer);
+                                        }
+                                    }
+                                    else {
+                                        /* Se for divisão, checa se operador é literal */
+                                        /* idivl não funciona sob literais */
+                                        if (strcmp(tr->children[1]->info.token_type, strdup("literal")) == 0) {
+                                            char *reg = whichRegister(isInComplexExp + 1);
+                                            char *buffer = malloc(sizeof(char) * 50);
+                                            strcpy(buffer, strdup("\tmovl "));
+                                            strcat(buffer, getVarInClosure(tr->children[1]));
+                                            char *buffer2 = malloc(sizeof(char) * 50);
+                                            sprintf(buffer2, ", %%%s\n", reg);
+                                            strcat(buffer, buffer2);
+                                            prog = asm_prog_insert(prog, strdup(buffer));
+                                            free(buffer);
+                                            free(buffer2);
+                                            char *buffer3 = malloc(sizeof(char) * 50);
+                                            strcpy(buffer3, getArithmeticOp(tr));
+                                            char *buffer4 = malloc(sizeof(char) * 50);
+                                            sprintf(buffer4, " %%%s\n", reg);
+                                            strcat(buffer3, buffer4);
+                                            prog = asm_prog_insert(prog, strdup(buffer3));
+                                            free(buffer3);
+                                            free(buffer4);
+                                        }
+                                        else {
+                                            char *buffer = malloc(sizeof(char) * 50);
+                                            strcpy(buffer, getArithmeticOp(tr));
+                                            strcat(buffer, strdup(" "));
+                                            strcat(buffer, getVarInClosure(tr->children[1]));
+                                            strcat(buffer, strdup("\n"));
+                                            prog = asm_prog_insert(prog, strdup(buffer));
+                                            free(buffer);
+                                        }
+                                    }
+                                }
+                                else if (isLastBinaryOp(tr) == 1) { // Caso um operando seja final
+                                    /* Opera sobre %eax */
+                                    if (strcmp(tr->children[0]->info.token_type, strdup("operador")) != 0) { // Se for o primeiro filho que é o operando final
+                                        if (strcmp(tr->info.token_value, strdup("/")) != 0) {
+                                            char *buffer = malloc(sizeof(char) * 50);
+                                            strcpy(buffer, getArithmeticOp(tr));
+                                            strcat(buffer, strdup(" "));
+                                            strcat(buffer, getVarInClosure(tr->children[0]));
+                                            strcat(buffer, strdup(", %eax\n"));
+                                            prog = asm_prog_insert(prog, strdup(buffer));
+                                            free(buffer);
+                                        }
+                                        else {
+                                            /* Se for divisão, checa se operador é literal */
+                                            /* idivl não funciona sob literais */
+                                            if (strcmp(tr->children[0]->info.token_type, strdup("literal")) == 0) {
+                                                char *reg = whichRegister(isInComplexExp + 1);
+                                                char *buffer = malloc(sizeof(char) * 50);
+                                                strcpy(buffer, strdup("\tmovl "));
+                                                strcat(buffer, getVarInClosure(tr->children[0]));
+                                                char *buffer2 = malloc(sizeof(char) * 50);
+                                                sprintf(buffer2, ", %%%s\n", reg);
+                                                strcat(buffer, buffer2);
+                                                prog = asm_prog_insert(prog, strdup(buffer));
+                                                free(buffer);
+                                                free(buffer2);
+                                                char *buffer3 = malloc(sizeof(char) * 50);
+                                                strcpy(buffer3, getArithmeticOp(tr));
+                                                char *buffer4 = malloc(sizeof(char) * 50);
+                                                sprintf(buffer4, " %%%s\n", reg);
+                                                strcat(buffer3, buffer4);
+                                                prog = asm_prog_insert(prog, strdup(buffer3));
+                                                free(buffer3);
+                                                free(buffer4);
+                                            }
+                                            else {
+                                                char *buffer = malloc(sizeof(char) * 50);
+                                                strcpy(buffer, getArithmeticOp(tr));
+                                                strcat(buffer, strdup(" "));
+                                                strcat(buffer, strdup(getVarInClosure(tr->children[0])));
+                                                strcat(buffer, strdup("\n"));
+                                                prog = asm_prog_insert(prog, strdup(buffer));
+                                                free(buffer);
+                                            }
+                                        }
+                                    }
+                                    else {
+                                        if (strcmp(tr->info.token_value, strdup("/")) != 0) {
+                                            char *buffer = malloc(sizeof(char) * 50);
+                                            strcpy(buffer, getArithmeticOp(tr));
+                                            strcat(buffer, strdup(" "));
+                                            strcat(buffer, getVarInClosure(tr->children[1]));
+                                            strcat(buffer, strdup(", %eax\n"));
+                                            prog = asm_prog_insert(prog, strdup(buffer));
+                                            free(buffer);
+                                        }
+                                        else {
+                                            /* Se for divisão, checa se operador é literal */
+                                            /* idivl não funciona sob literais */
+                                            if (strcmp(tr->children[1]->info.token_type, strdup("literal")) == 0) {
+                                                char *reg = whichRegister(isInComplexExp + 1);
+                                                char *buffer = malloc(sizeof(char) * 50);
+                                                strcpy(buffer, strdup("\tmovl "));
+                                                strcat(buffer, getVarInClosure(tr->children[1]));
+                                                char *buffer2 = malloc(sizeof(char) * 50);
+                                                sprintf(buffer2, ", %%%s\n", reg);
+                                                strcat(buffer, buffer2);
+                                                prog = asm_prog_insert(prog, strdup(buffer));
+                                                free(buffer);
+                                                free(buffer2);
+                                                char *buffer3 = malloc(sizeof(char) * 50);
+                                                strcpy(buffer3, getArithmeticOp(tr));
+                                                char *buffer4 = malloc(sizeof(char) * 50);
+                                                sprintf(buffer4, " %%%s\n", reg);
+                                                strcat(buffer3, buffer4);
+                                                prog = asm_prog_insert(prog, strdup(buffer3));
+                                                free(buffer3);
+                                                free(buffer4);
+                                            }
+                                            else {
+                                                char *buffer = malloc(sizeof(char) * 50);
+                                                strcpy(buffer, getArithmeticOp(tr));
+                                                strcat(buffer, strdup(" "));
+                                                strcat(buffer, getVarInClosure(tr->children[1]));
+                                                strcat(buffer, strdup("\n"));
+                                                prog = asm_prog_insert(prog, strdup(buffer));
+                                                free(buffer);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            /* Operações relacionais */
+                            else if (isArithmeticOp(tr) == 1) {
+                                if (isInLogicalExp == 1) {
+                                    if (isLastBinaryOp(tr) == 0) { // Caso ambos operandos sejam finais
+                                        /* Lê o primeiro operando */
+                                        char *buffer = malloc(sizeof(char) * 50);
+                                        strcpy(buffer, strdup("\tmovl "));
+                                        strcat(buffer, getVarInClosure(tr->children[0]));
+                                        strcat(buffer, strdup(", %edx\n"));
+                                        prog = asm_prog_insert(prog, strdup(buffer));
+                                        free(buffer);
+                                        /* Lê o segundo operando */
+                                        char *buffer2 = malloc(sizeof(char) * 50);
+                                        strcpy(buffer2, strdup("\tmovl "));
+                                        strcat(buffer2, getVarInClosure(tr->children[1]));
+                                        strcat(buffer2, strdup(", %eax\n"));
+                                        prog = asm_prog_insert(prog, strdup(buffer2));
+                                        free(buffer2);
+                                    }
+                                    else if (isLastBinaryOp(tr) == 1) {
+                                        /* Assume que o operando não final está em eax */
+                                        char *buffer = malloc(sizeof(char) * 50);
+                                        strcpy(buffer, strdup("\tmovl "));
+                                        if (strcmp(tr->children[0]->info.token_type, strdup("operador")) != 0) { // Se for o primeiro filho que é o operando final
+                                            strcat(buffer, getVarInClosure(tr->children[0]));
+                                        }
+                                        else {
+                                            strcat(buffer, getVarInClosure(tr->children[1]));
+                                        }
+                                        strcat(buffer, strdup(", %edx\n"));
+                                        prog = asm_prog_insert(prog, strdup(buffer));
+                                        free(buffer);
+                                    }
+                                    /* Compara os registradores */
+                                    char *buffer3 = malloc(sizeof(char) * 50);
+                                    strcpy(buffer3, strdup("\tcmpl %eax, %edx\n"));
+                                    prog = asm_prog_insert(prog, strdup(buffer3));
+                                    free(buffer3);
+                                    /* Faz o pulo */
+                                    char *buffer = malloc(sizeof(char) * 50);
+                                    strcpy(buffer, getRelationalop(tr, negateOperations));
+                                    char *buffer2 = malloc(sizeof(char) * 50);
+                                    sprintf(buffer2, " .%s\n", tr->jumpTo);
+                                    strcat(buffer, buffer2);
+                                    prog = asm_prog_insert(prog, strdup(buffer));
+                                    free(buffer);
+                                    free(buffer2);
+                                }
+                            }
+                            
+                            /* Retorno */
+                            // Já funciona para expressões, uma vez que %eax é o registrador de retorno e também o padrão das operações
+                            if (strcmp(cursor->operation->operation, strdup("ret")) == 0) {
+                                /* Caso seja uma atribuição direta */
+                                if (strcmp(tr->children[0]->info.token_type, strdup("operador")) != 0) {
+                                    char *buffer = malloc(sizeof(char) * 50);
+                                    strcpy(buffer, strdup("\tmovl "));
+                                    strcat(buffer, getVarInClosure(tr->children[0]));
+                                    strcat(buffer, strdup(", %eax\n"));
+                                    prog = asm_prog_insert(prog, strdup(buffer));
+                                    free(buffer);
+                                    tr = NULL;
+                                    return;
+                                }
+                            }
+                        }
+
+                    }
+                    /* Caso seja negação unária, não itera novamente sobre o programa em assembly - diferente de ILOC */
+                    if ((strcmp(tr->info.token_value, strdup("-")) == 0) && (tr->number_of_children == 1)) {
+                        cursor = NULL;
+                    }
+                    else {
+                        cursor = cursor->next_op;
+                    }
+                }
+            }
+            /* Organiza ordem de operações */
+            for (int i = 0; i < tr->number_of_children; i++) {
+                if (tr->children[i] != NULL) {
+                    if (strcmp(tr->children[i]->info.token_type, strdup("comando simples")) == 0) {
+                        createAsmProg (tr->children[i]);
+                    }
+                }
+            }
+        }
+    }
+}
+
+char* getVarInClosure (tree_t *tr) {
+    if (tr != NULL) {
+        /* O nodo referencia a variável/literal em si */
+        if (strcmp(tr->info.token_type, strdup("identificador")) == 0) {
+            iloc_prog *cursor = tr->prog;
+            while (strcmp(cursor->operation->operation, strdup("loadAI")) != 0) {
+                cursor = cursor->next_op;
+            }
+            /* Variável é local */
+            if (strcmp(cursor->operation->input_1, strdup("rfp")) == 0) {
+                char *buffer = malloc(sizeof(char) * 20);
+                sprintf(buffer, "-%d(%%rbp)", 4*(atoi(cursor->operation->input_2) + 1));
+                return strdup(buffer);
+            }
+            else {
+                /* Variável é global */
+                char *buffer = malloc(sizeof(char) * 20);
+                sprintf(buffer, "%s(%%rip)", tr->info.token_value);
+                return strdup(buffer);
+            }
+        }
+        else if (strcmp(tr->prog->operation->operation, strdup("storeAI")) == 0) {
+            /* Variável é local */
+            if (strcmp(tr->prog->operation->output_1, strdup("rfp")) == 0) {
+                char *buffer = malloc(sizeof(char) * 20);
+                sprintf(buffer, "-%d(%%rbp)", 4*(atoi(tr->prog->operation->output_2) + 1));
+                return strdup(buffer);
+            }
+            else {
+                /* Variável é global */
+                char *buffer = malloc(sizeof(char) * 20);
+                sprintf(buffer, "%s(%%rip)", tr->children[0]->info.token_value);
+                return strdup(buffer);
+            }
+        }
+        else if (strcmp(tr->info.token_type, strdup("literal")) == 0) {
+            char *buffer = malloc(sizeof(char) * 20);
+            sprintf(buffer, "$%s", tr->info.token_value);
+            return strdup(buffer);
+        }
+    }
+}
+
+char* getArithmeticOp (tree_t *t) {
+    if (strcmp(t->info.token_value, strdup("+")) == 0) {
+        return strdup("\taddl");
+    }
+    else if (strcmp(t->info.token_value, strdup("-")) == 0) {
+        if (t->number_of_children == 2) {
+            return strdup("\tsubl");
+        }
+        else if (t->number_of_children == 1) {
+            return strdup("\tnegl");
+        }
+    }
+    else if (strcmp(t->info.token_value, strdup("*")) == 0) {
+        return strdup("\timull");
+    }
+    else if (strcmp(t->info.token_value, strdup("/")) == 0) {
+        return strdup("\tcltd\n\tidivl");
+    }
+}
+
+char *getRelationalop (tree_t *t, short order) {
+    /* Jumps são contrários ao sinal */
+    if (strcmp(t->info.token_value, strdup("==")) == 0) {
+        if (order == 0) {
+            return strdup("\tjne");
+        }
+        else if (order == 1) {
+            return strdup("\tje");
+        }
+    }
+    else if (strcmp(t->info.token_value, strdup("!=")) == 0) {
+        if (order == 0) {
+            return strdup("\tje");
+        }
+        else if (order == 1) {
+            return strdup("\tjne");
+        }
+    }
+    else if (strcmp(t->info.token_value, strdup("<")) == 0) {
+        if (order == 0) {
+            return strdup("\tjge");
+        }
+        else if (order == 1) {
+            return strdup("\tjl");
+        }
+    }
+    else if (strcmp(t->info.token_value, strdup(">")) == 0) {
+        if (order == 0) {
+            return strdup("\tjle");
+        }
+        else if (order == 1) {
+            return strdup("\tjg");
+        }
+    }
+    else if (strcmp(t->info.token_value, strdup("<=")) == 0) {
+        if (order == 0) {
+            return strdup("\tjg");
+        }
+        else if (order == 1) {
+            return strdup("\tjle");
+        }
+    }
+    else if (strcmp(t->info.token_value, strdup(">=")) == 0) {
+        if (order == 0) {
+            return strdup("\tjl");
+        }
+        else if (order == 1) {
+            return strdup("\tjge");
+        }
+    }
 }
