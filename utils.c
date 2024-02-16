@@ -795,12 +795,12 @@ void generateAsm (tree_t *tr) {
             printf("main:\n");
             printf(".LFB0:\n");
 
-            prog = asm_prog_insert(prog, strdup("\tpush %%rbp\n"));
-            prog = asm_prog_insert(prog, strdup("\tmovq %%rsp, %%rbp\n"));
+            prog = asm_prog_insert(prog, strdup("\tpush %rbp\n"));
+            prog = asm_prog_insert(prog, strdup("\tmovq %rsp, %rbp\n"));
 
             createAsmProg(t);
 
-            prog = asm_prog_insert(prog, strdup("\tpopq %%rbp\n"));
+            prog = asm_prog_insert(prog, strdup("\tpopq %rbp\n"));
             prog = asm_prog_insert(prog, strdup("\tret\n"));
 
             printAsmProg(prog);
@@ -1008,10 +1008,6 @@ void printAsmProg (asm_prog *prog) {
         printf("%s", cursor->instruction);
         cursor = cursor->next;
     }
-}
-
-void generateDOTGraph (cf_graph *graph) {
-
 }
 
 void createAsmProg (tree_t *tr) {
@@ -1523,6 +1519,18 @@ void createAsmProg (tree_t *tr) {
     }
 }
 
+void generateAsm_ (tree_t *tr) {
+    if (tr != NULL) {
+        prog = asm_prog_insert(prog, strdup("\tpush %rbp\n"));
+        prog = asm_prog_insert(prog, strdup("\tmovq %rsp, %rbp\n"));
+
+        createAsmProg(tr);
+
+        prog = asm_prog_insert(prog, strdup("\tpopq %rbp\n"));
+        prog = asm_prog_insert(prog, strdup("\tret\n"));
+    }
+}
+
 char* getVarInClosure (tree_t *tr) {
     if (tr != NULL) {
         /* O nodo referencia a variável/literal em si */
@@ -1646,8 +1654,8 @@ int setLeaderInstructions () {
             cursor->isLeader = 1;
         }
         /* Caso seja a instrução destino de uma operação de desvio, é uma instrução líder */
-        if (cursor->instruction[0] == 'L') {
-            while (cursor->instruction[0] == 'L') {
+        if (cursor->instruction[0] == '.') {
+            while (cursor->instruction[0] == '.') {
                 cursor = cursor->next;
             }
             cursor->isLeader = 1;
@@ -1655,8 +1663,12 @@ int setLeaderInstructions () {
 
         /* Caso seja uma instrução de desvio */
         /* A próxima instrução vai ser líder */
-        if (cursor->instruction[0] == 'j') {
+        if (cursor->instruction[1] == 'j') {
             cursor = cursor->next;
+            /* Pula eventuais labels */
+            while (cursor->instruction[0] == '.') {
+                cursor = cursor->next;
+            }
             cursor->isLeader = 1;
         }
         cursor = cursor->next;
@@ -1667,20 +1679,130 @@ int setLeaderInstructions () {
         if (cursor->isLeader == 1) {
             count += 1;
         }
+        cursor = cursor->next;
     }
     return count;
 }
 
-cf_graph *createCFGraph () {
+void createCFGraph () {
     /* Seta quais são as instruções líderes */
-    setLeaderInstructions();
+    int numBasicBlocks = setLeaderInstructions();
 
     /* Cria os nodos do grafo */
-    /* Ideias: */
-    /* Criar função que busca label em nodos - Necessário */
-    /* Criar função para nomear blocos básicos - Necessário? */
+    basic_block *BBs_array[numBasicBlocks];
+    asm_prog *cursor = prog;
+    for (int i = 0; i < numBasicBlocks; i++) {
+        asm_prog *bb_code = NULL;
+        while (nextIsntNULLorLeader(cursor) != 1) {
+            bb_code = asm_prog_insert(bb_code, strdup(cursor->instruction));
+            cursor = cursor->next;
+        }
+        if (cursor != NULL) {
+            bb_code = asm_prog_insert(bb_code, strdup(cursor->instruction));
+        }
+        BBs_array[i] = malloc(sizeof(basic_block));
+        BBs_array[i]->prog = bb_code;
+        char *buffer = malloc(sizeof(char) * 5);
+        sprintf(buffer, "%d", i);
+        BBs_array[i]->name = strdup(buffer);
+        if (cursor->next != NULL) {
+            cursor = cursor->next;
+        }
+    }
 
     /* Decide arestas */
+    int edgesMatrix[numBasicBlocks][numBasicBlocks];
+    /* Inicia a matriz de arestas zerada */
+    for (int i = 0; i < numBasicBlocks; i++) {
+        for (int j = 0; j < numBasicBlocks; j++) {
+            edgesMatrix[i][j] = 0;
+        }
+    }
 
-    /* Retorna */
+    for (int i = 0; i < numBasicBlocks; i++) {
+        asm_prog *cursor = BBs_array[i]->prog;
+        int foundUnconditionalJump = 0;
+        while (cursor != NULL) {
+            if (cursor->instruction[1] == 'j') {
+                if (cursor->instruction[2] == 'm') {
+                    if (cursor->instruction[3] == 'p') {
+                        /* Encontrou um jmp incondicional */
+                        foundUnconditionalJump = 1;
+                        char *label = strdup(&cursor->instruction[5]);
+                        int blockTo = findLabelInBBs(BBs_array, numBasicBlocks, label);
+                        edgesMatrix[i][blockTo] = 1;
+                    }
+                }
+                else if (cursor->instruction[2] == 'n'
+                        || cursor->instruction[2] == 'e'
+                        || cursor->instruction[2] == 'g'
+                        || cursor->instruction[2] == 'l') {
+                            /* Encontrou um jmp condicional */
+                            int j = 0;
+                            while (cursor->instruction[j] != '.') {
+                                j++;
+                            }
+                            char *label = strdup(&cursor->instruction[j]);
+                            int blockTo = findLabelInBBs(BBs_array, numBasicBlocks, label);
+                            edgesMatrix[i][blockTo] = 1;
+                }
+            }
+            cursor = cursor->next;
+        }
+        /* Não encontrou jump incondicional */
+        if (foundUnconditionalJump == 0) {
+            if (i != (numBasicBlocks - 1)) {
+                edgesMatrix[i][i+1] = 1;
+            }
+        }
+        /* Encontrou jump incondicional */
+        else {
+            foundUnconditionalJump = 0;
+        }
+    }
+    /* Cria formato DOT */
+    generateDOTGraph (numBasicBlocks, edgesMatrix);
+}
+
+short nextIsntNULLorLeader (asm_prog *prog) {
+    if (prog->next == NULL) {
+        return 1;
+    }
+    else {
+        if (prog->next->isLeader == 1) {
+            return 1;
+        }
+        else {
+            return 0;
+        }
+    }
+}
+
+int findLabelInBBs (basic_block **BBs_array, int numElems, char *label) {
+    for (int i = 0; i < numElems; i++) {
+        asm_prog *cursor = BBs_array[i]->prog;
+        while(cursor != NULL) {
+            char *buffer = strdup(cursor->instruction);
+            buffer[strlen(buffer) - 2] = '\n';
+            buffer[strlen(buffer) - 1] = '\0';
+            if (strcmp(buffer, strdup(label)) == 0) {
+                return (i + 1); // Label se refere sempre ao próximo bloco
+            }
+            cursor = cursor->next;
+        }
+    }
+    return -1; // Erro;
+}
+
+void generateDOTGraph (int numNodes, int graph_edges[numNodes][numNodes]) {
+    printf("digraph G {\n");
+    for (int i = 0; i < numNodes; i++) {
+        for (int j = 0; j < numNodes; j++) {
+            if (graph_edges[i][j] == 1) {
+                printf("%d -> %d;\n", i, j);
+            }
+        }
+        printf("%d\n", i);
+    }
+    printf("}\n");
 }

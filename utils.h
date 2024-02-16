@@ -79,11 +79,10 @@ typedef struct asmprog {
     struct asmprog* next;
 } asm_prog;
 
-typedef struct cfgraph {
-    asm_prog *prog;
-    int number_of_children;
-    struct cfgraph **children;
-} cf_graph;
+typedef struct basicblock {
+    asm_prog* prog;
+    char *name; 
+} basic_block;
 
 /* Retorna o número da linha atual do código-fonte */
 int get_line_number();
@@ -247,11 +246,11 @@ void free_asm_prog (asm_prog* prog);
 /* Printa uma lista encadeada de instruções ASM */
 void printAsmProg (asm_prog *prog);
 
-/* Gera o grafo de controle de fluxo em formato DOT */
-void generateDOTGraph (cf_graph *graph);
-
 /* Itera sobre a AST, populando a lista encadeada de assembly */
 void createAsmProg (tree_t *tr);
+
+/* Gera código assembly completo sem printar */
+void generateAsm_ (tree_t *tr);
 
 /* Retorna a variável em assembly no seu closure */
 char* getVarInClosure (tree_t *tr);
@@ -268,6 +267,15 @@ char* getRelationalop (tree_t *t, short order);
 int setLeaderInstructions ();
 
 /* Cria um grafo de controle de fluxo */
-cf_graph *createCFGraph ();
+void createCFGraph ();
+
+/* Gera o grafo de controle de fluxo em formato DOT */
+void generateDOTGraph (int numNodes, int graph_edges[numNodes][numNodes]);
+
+/* Função booleana autoexplicativa */
+short nextIsntNULLorLeader (asm_prog *prog);
+
+/* Procura label em blocos básicos */
+int findLabelInBBs (basic_block **BBs_array, int numElems, char *label);
 
 #endif //_UTILS_H_
