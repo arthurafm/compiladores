@@ -794,14 +794,16 @@ void generateAsm (tree_t *tr) {
             printf("\t.globl main\n");
             printf("main:\n");
             printf(".LFB0:\n");
-            printf("\tpush %%rbp\n");
-            printf("\tmovq %%rsp, %%rbp\n");
-            
-            createAsmProg(t);
-            printAsmProg(prog);
 
-            printf("\tpopq %%rbp\n");
-            printf("\tret\n");
+            prog = asm_prog_insert(prog, strdup("\tpush %%rbp\n"));
+            prog = asm_prog_insert(prog, strdup("\tmovq %%rsp, %%rbp\n"));
+
+            createAsmProg(t);
+
+            prog = asm_prog_insert(prog, strdup("\tpopq %%rbp\n"));
+            prog = asm_prog_insert(prog, strdup("\tret\n"));
+
+            printAsmProg(prog);
         }
         printf("\n");
     }
@@ -942,6 +944,7 @@ asm_prog* asm_prog_insert(asm_prog *prog, char* instruction) {
         asm_prog* head = create_asm_prog();
         head->instruction = instruction;
         head->next = NULL;
+        head->isLeader = 0;
         prog = head;
         return prog;
     }
@@ -950,6 +953,7 @@ asm_prog* asm_prog_insert(asm_prog *prog, char* instruction) {
         asm_prog* node = create_asm_prog();
         node->instruction = instruction;
         node->next = NULL;
+        node->isLeader = 0;
         prog->next = node;
         return prog;
     }
@@ -964,6 +968,7 @@ asm_prog* asm_prog_insert(asm_prog *prog, char* instruction) {
     asm_prog* node = create_asm_prog();
     node->instruction = instruction;
     node->next = NULL;
+    node->isLeader = 0;
     temp->next = node;
     return prog;
 }
@@ -1005,7 +1010,7 @@ void printAsmProg (asm_prog *prog) {
     }
 }
 
-void generateControlFluxGraph (cf_graph *graph) {
+void generateDOTGraph (cf_graph *graph) {
 
 }
 
@@ -1631,4 +1636,51 @@ char *getRelationalop (tree_t *t, short order) {
             return strdup("\tjge");
         }
     }
+}
+
+int setLeaderInstructions () {
+    asm_prog *cursor = prog;
+    while (cursor != NULL) {
+        /* Caso seja a primeira instrução do programa, é uma instrução líder */
+        if (cursor == prog) {
+            cursor->isLeader = 1;
+        }
+        /* Caso seja a instrução destino de uma operação de desvio, é uma instrução líder */
+        if (cursor->instruction[0] == 'L') {
+            while (cursor->instruction[0] == 'L') {
+                cursor = cursor->next;
+            }
+            cursor->isLeader = 1;
+        }
+
+        /* Caso seja uma instrução de desvio */
+        /* A próxima instrução vai ser líder */
+        if (cursor->instruction[0] == 'j') {
+            cursor = cursor->next;
+            cursor->isLeader = 1;
+        }
+        cursor = cursor->next;
+    }
+    int count = 0;
+    cursor = prog;
+    while (cursor != NULL) {
+        if (cursor->isLeader == 1) {
+            count += 1;
+        }
+    }
+    return count;
+}
+
+cf_graph *createCFGraph () {
+    /* Seta quais são as instruções líderes */
+    setLeaderInstructions();
+
+    /* Cria os nodos do grafo */
+    /* Ideias: */
+    /* Criar função que busca label em nodos - Necessário */
+    /* Criar função para nomear blocos básicos - Necessário? */
+
+    /* Decide arestas */
+
+    /* Retorna */
 }

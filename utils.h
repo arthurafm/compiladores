@@ -75,6 +75,7 @@ typedef struct tree {
 /* --- Estrutura do Grafo de Controle de Fluxo --- */
 typedef struct asmprog {
     char *instruction;
+    short isLeader; // Flag para saber se é uma instrução-líder; 0 = Não, 1 = Sim
     struct asmprog* next;
 } asm_prog;
 
@@ -247,7 +248,7 @@ void free_asm_prog (asm_prog* prog);
 void printAsmProg (asm_prog *prog);
 
 /* Gera o grafo de controle de fluxo em formato DOT */
-void generateControlFluxGraph (cf_graph *graph);
+void generateDOTGraph (cf_graph *graph);
 
 /* Itera sobre a AST, populando a lista encadeada de assembly */
 void createAsmProg (tree_t *tr);
@@ -261,5 +262,12 @@ char* getArithmeticOp (tree_t *t);
 /* Retorna a operação relacional a ser feita em assembly */
 /* order = 0 -> operação reversa, order = 1 -> operação condizente */
 char* getRelationalop (tree_t *t, short order);
+
+/* Seta quais instruções são líderes */
+/* Retorna quantos blocos básicos existem */
+int setLeaderInstructions ();
+
+/* Cria um grafo de controle de fluxo */
+cf_graph *createCFGraph ();
 
 #endif //_UTILS_H_
