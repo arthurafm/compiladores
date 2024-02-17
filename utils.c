@@ -800,9 +800,6 @@ void generateAsm (tree_t *tr) {
 
             createAsmProg(t);
 
-            prog = asm_prog_insert(prog, strdup("\tpopq %rbp\n"));
-            prog = asm_prog_insert(prog, strdup("\tret\n"));
-
             printAsmProg(prog);
         }
         printf("\n");
@@ -1180,7 +1177,6 @@ void createAsmProg (tree_t *tr) {
         /* Caso seja um if/if-else */
         else if (strcmp(tr->info.token_value, strdup("if")) == 0) {
             short buffer = closestContext;
-            isInLogicalExp = 1;
 
             char* label_bif = findLabelinBlock(tr->children[1]);
             char* label_belse = findLabelinBlock(tr->children[2]);
@@ -1190,6 +1186,7 @@ void createAsmProg (tree_t *tr) {
             /* Caso seja um if simples */
             if (tr->number_of_children <= 3) {
                 tr->children[0]->jumpTo = strdup(label_post);
+                isInLogicalExp = 1;
                 createAsmProg(tr->children[0]);
                 isInLogicalExp = 0;
                 createAsmProg(tr->children[1]);
@@ -1198,6 +1195,7 @@ void createAsmProg (tree_t *tr) {
             /* Caso seja um if-else */
             else {
                 tr->children[0]->jumpTo = strdup(label_belse);
+                isInLogicalExp = 1;
                 createAsmProg(tr->children[0]);
                 isInLogicalExp = 0;
                 createAsmProg(tr->children[1]);
@@ -1214,7 +1212,6 @@ void createAsmProg (tree_t *tr) {
         else if (strcmp(tr->info.token_value, strdup("while")) == 0) {
            /* Jumps tem que ser condizentes */
             short buffer = closestContext;
-            isInLogicalExp = 1;
 
             char* label_test = findLabelinBlock(tr->children[0]);
             char* label_cb = findLabelinBlock(tr->children[1]);
@@ -1228,7 +1225,9 @@ void createAsmProg (tree_t *tr) {
             createAsmProg(tr->children[1]);
             negateOperations = 1;
             tr->children[0]->jumpTo = strdup(label_cb);
+            isInLogicalExp = 1;
             createAsmProg(tr->children[0]);
+            isInLogicalExp = 0;
             negateOperations = 0;
             createAsmProg(tr->children[2]);
             closestContext = buffer;
@@ -1491,8 +1490,10 @@ void createAsmProg (tree_t *tr) {
                                     strcat(buffer, strdup(", %eax\n"));
                                     prog = asm_prog_insert(prog, strdup(buffer));
                                     free(buffer);
-                                    tr = NULL;
-                                    return;
+
+                                    /* Faz o retorno */
+                                    prog = asm_prog_insert(prog, strdup("\tpopq %rbp\n"));
+                                    prog = asm_prog_insert(prog, strdup("\tret\n"));
                                 }
                             }
                         }
