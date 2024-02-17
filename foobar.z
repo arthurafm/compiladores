@@ -1,0 +1,36 @@
+/* Programa que "printa" FOO a cada multiplo de 3, e BAR a cada multiplos de 5, e FOOBAR a cada multiplos de 15 */ 
+int a;
+
+() >= int ! main {
+   int n, x, y;
+   n = 0;
+   x = 0;
+   y = 0;
+   while (n < 100) {
+      n = n + 1;
+      x = x + 1;
+      y = y + 1;
+      if (x == 3 & y == 5) {
+         // FOOBAR
+         x = 0;
+         y = 0;
+      }
+      else {
+         if (x == 3) {
+            // FOO
+            x = 0;
+         }
+         else {
+            if (y == 5) {
+               // BAR
+               y = 0;
+            }
+            else {
+               // NEM FOO NEM BAR
+               a = a + 1;
+            };
+         };     
+      };
+   };
+   return a;
+}

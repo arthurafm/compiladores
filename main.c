@@ -18,7 +18,6 @@ int main (int argc, char **argv)
   int ret = yyparse();
   generateAsm_(arvore);
   createCFGraph();
-  // generateAsm(arvore);
   yylex_destroy();
   return ret;
 }

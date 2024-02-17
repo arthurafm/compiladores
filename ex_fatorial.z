@@ -1,0 +1,12 @@
+/* Cálculo de fatorial do valor inserido em a */ 
+
+() >= int ! main {
+   int a, b;
+   a = 10;
+   b = 1;
+   while (a > 0) {
+      b = a * b;
+      a = a - 1;
+   };
+   return b;
+}
